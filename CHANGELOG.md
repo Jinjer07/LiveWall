@@ -2,7 +2,9 @@
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [1.6.1] — 2026-11-24
+
+Snow polish by [@Nanda070](https://github.com/Nanda070) in [#2](https://github.com/Jinjer07/LiveWall/pull/2).
 
 ### Changed
 - **Snow drifts:** they build up faster and taper toward the edges of a window. The mouse pointer now plows snow aside into ridges instead of removing it. Flakes are soft round discs with a calmer sway.
@@ -140,6 +142,7 @@ Full functionality and redesign, without the icon and docs.
 - Assigned wallpapers were reset on launch.
 - Global mouse monitoring asked for Accessibility access; the cursor is now polled without permissions.
 
+[1.6.1]: https://github.com/Jinjer07/LiveWall/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/Jinjer07/LiveWall/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/Jinjer07/LiveWall/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/Jinjer07/LiveWall/compare/v1.4.0...v1.4.1
