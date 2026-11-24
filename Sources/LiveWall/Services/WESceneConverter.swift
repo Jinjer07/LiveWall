@@ -465,8 +465,14 @@ enum WESceneConverter {
                     l.text = value.isEmpty ? name : value
                 }
                 let sz = vec(obj["size"])
-                let sc = scale.first ?? 1
-                l.fontSize = sz.count >= 2 && sz[1] > 0 ? sz[1] * sc * 0.62 : (num(obj["pointsize"]) ?? 32) * 2 * sc
+                let sc = scale.count >= 2 ? (scale[0] + scale[1]) / 2 : (scale.first ?? 1)
+                // Высота рамки текста годится как размер шрифта, только когда рамка однострочная
+                // (шире, чем выше). У вертикальных рамок («D a y» 195×739, «Date» 411×5300) высота —
+                // это длина всех строк, и шрифт получался в разы больше сцены. Для них берём pointsize.
+                let boxIsSingleLine = sz.count >= 2 && sz[1] > 0 && sz[0] / sz[1] >= 1.5
+                let fromPoint = (num(obj["pointsize"]) ?? 32) * 2 * sc
+                let raw = boxIsSingleLine ? sz[1] * sc * 0.62 : fromPoint
+                l.fontSize = min(max(raw, 10), min(600, H * 0.3))   // 10…600 — диапазон ползунка в редакторе
                 l.fontWeight = "500"
                 let c = vec(obj["color"])
                 l.textColor = hex(c.isEmpty ? [1, 1, 1] : c)

@@ -11,8 +11,14 @@ struct LibraryView: View {
     @State private var search = ""
     @State private var filter: Filter = .all
     @State private var tagFilter: String? = nil
-    @State private var selectedID: String?
+    @State private var selection: Set<String> = []
+    @State private var anchorID: String?
+    @State private var confirmBulkDelete = false
     @State private var dropTargeted = false
+    @FocusState private var gridFocused: Bool
+
+    /// Панель деталей показывается только при выборе ровно одних обоев.
+    private var selectedID: String? { selection.count == 1 ? selection.first : nil }
 
     private var filters: [Filter] { [.all, .favorites] + WallpaperType.allCases.map { Filter.type($0) } }
 
@@ -66,7 +72,7 @@ struct LibraryView: View {
 
             if let id = selectedID, library.item(id) != nil {
                 Rectangle().fill(Theme.stroke).frame(width: 1)
-                WallpaperDetailView(itemID: id) { withAnimation(Theme.spring) { selectedID = nil } }
+                WallpaperDetailView(itemID: id) { withAnimation(Theme.spring) { selection = [] } }
                     .frame(width: 300)
                     .background(Theme.bg)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -104,13 +110,11 @@ struct LibraryView: View {
         return ScrollView {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 180, maximum: 260), spacing: 14)], spacing: 14) {
                 ForEach(Array(items.enumerated()), id: \.element.id) { idx, item in
-                    WallpaperCard(item: item, selected: selectedID == item.id,
+                    WallpaperCard(item: item, selected: selection.contains(item.id),
                                   active: engine.inUse.contains(item.id), version: library.thumbVersion)
-                        .onTapGesture(count: 2) {
-                            app.apply(item.id)
-                            app.showToast(tr("Применено: %@", item.title))
-                        }
-                        .onTapGesture { withAnimation(Theme.spring) { selectedID = item.id } }
+                        // Один обработчик вместо пары (двойной + одинарный): иначе SwiftUI ждёт
+                        // окончания времени двойного клика, и выбор срабатывает с задержкой.
+                        .onTapGesture { handleClick(item, in: items) }
                         .contextMenu { contextMenu(item) }
                         .staggered(idx, base: 0.025)
                 }
@@ -118,6 +122,28 @@ struct LibraryView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
             .padding(.top, 4)
+        }
+        .focusable()
+        .focusEffectDisabled()
+        .focused($gridFocused)
+        .onKeyPress(.escape) { if selection.isEmpty { return .ignored }; selection = []; return .handled }
+        .onKeyPress("a", phases: .down) { press in
+            guard press.modifiers.contains(.command) else { return .ignored }
+            selection = Set(items.map(\.id)); return .handled
+        }
+        .background {
+            // Cmd+Backspace — удалить выбранные обои
+            Button("") { if !selection.isEmpty { confirmBulkDelete = true } }
+                .keyboardShortcut(.delete, modifiers: .command)
+                .opacity(0).frame(width: 0, height: 0).accessibilityHidden(true)
+        }
+        .safeAreaInset(edge: .bottom) {
+            if selection.count > 1 { selectionBar(items) }
+        }
+        .confirmationDialog(tr("Удалить выбранные обои (%@)?", selection.count), isPresented: $confirmBulkDelete) {
+            Button(tr("Удалить"), role: .destructive) { deleteSelected() }
+        } message: {
+            Text(tr("Файлы обоев из библиотеки будут перемещены в Корзину."))
         }
         .overlay {
             if library.items.isEmpty {
@@ -127,6 +153,56 @@ struct LibraryView: View {
                 EmptyState(icon: "magnifyingglass", title: tr("Ничего не найдено"), text: tr("Попробуйте другой запрос или фильтр"))
             }
         }
+    }
+
+    // MARK: Выбор
+
+    private func handleClick(_ item: WallpaperItem, in items: [WallpaperItem]) {
+        let event = NSApp.currentEvent
+        let mods = event?.modifierFlags ?? []
+        gridFocused = true
+        if mods.contains(.command) {
+            if selection.contains(item.id) { selection.remove(item.id) } else { selection.insert(item.id) }
+            anchorID = item.id
+        } else if mods.contains(.shift), let a = anchorID,
+                  let i = items.firstIndex(where: { $0.id == a }), let j = items.firstIndex(where: { $0.id == item.id }) {
+            selection = Set(items[min(i, j)...max(i, j)].map(\.id))
+        } else if (event?.clickCount ?? 1) >= 2 {
+            selection = [item.id]; anchorID = item.id
+            app.apply(item.id)
+            app.showToast(tr("Применено: %@", item.title))
+        } else {
+            withAnimation(Theme.spring) { selection = [item.id] }
+            anchorID = item.id
+        }
+    }
+
+    private func deleteSelected() {
+        let doomed = library.items.filter { selection.contains($0.id) }
+        selection = []
+        for it in doomed { app.remove(it) }
+        app.showToast(tr("Удалено: %@", doomed.count))
+    }
+
+    private func selectionBar(_ items: [WallpaperItem]) -> some View {
+        HStack(spacing: 12) {
+            Text(tr("Выбрано: %@", selection.count)).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.text)
+            Spacer()
+            Button(tr("Выбрать все")) { selection = Set(items.map(\.id)) }.buttonStyle(GhostButtonStyle(compact: true))
+            Button {
+                let sel = library.items.filter { selection.contains($0.id) }
+                let allFav = sel.allSatisfy(\.favorite)
+                for var it in sel { it.favorite = !allFav; library.update(it) }
+            } label: { Label(tr("Избранное"), systemImage: "star") }
+                .buttonStyle(GhostButtonStyle(compact: true))
+            Button { selection = [] } label: { Text(tr("Снять выбор")) }.buttonStyle(GhostButtonStyle(compact: true))
+            Button(role: .destructive) { confirmBulkDelete = true } label: { Label(tr("Удалить"), systemImage: "trash") }
+                .buttonStyle(CrimsonButtonStyle())
+        }
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Theme.panelHi))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Theme.stroke))
+        .padding(.horizontal, 20).padding(.bottom, 12)
     }
 
     private var addMenu: some View {
@@ -139,7 +215,7 @@ struct LibraryView: View {
             Divider()
             Button(tr("Новый шейдер")) {
                 let it = library.createShader()
-                withAnimation(Theme.spring) { selectedID = it.id }
+                withAnimation(Theme.spring) { selection = [it.id] }
             }
             Button(tr("Новая сцена…")) { app.openEditor(nil) }
         } label: {
@@ -189,7 +265,7 @@ struct LibraryView: View {
         Button(tr("Экспорт в .wallpkg…")) { export(item) }
         Divider()
         Button(tr("Удалить"), role: .destructive) {
-            if selectedID == item.id { selectedID = nil }
+            if selection.contains(item.id) { selection.remove(item.id) }
             app.remove(item)
         }
     }
@@ -201,7 +277,7 @@ struct LibraryView: View {
     }
 
     private func report(_ r: (imported: [WallpaperItem], errors: [String])) {
-        if let first = r.imported.first { withAnimation(Theme.spring) { selectedID = first.id } }
+        if let first = r.imported.first { withAnimation(Theme.spring) { selection = [first.id] } }
         if !r.errors.isEmpty {
             app.showToast(tr("Не удалось: ") + r.errors.joined(separator: "; "))
         } else if !r.imported.isEmpty {
