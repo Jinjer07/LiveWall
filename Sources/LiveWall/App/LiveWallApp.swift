@@ -32,8 +32,38 @@ struct LiveWallApp: App {
 
 struct MenuBarLabel: View {
     @EnvironmentObject var engine: WallpaperEngine
+    @Environment(\.openWindow) private var openWindow
     var body: some View {
         Image(systemName: engine.userPaused ? "pause.rectangle" : "photo.artframe")
+            .onAppear {
+                // Значок в строке меню живёт всё время — через него открываем главное окно,
+                // даже если оно было закрыто (клик по иконке в Dock / Launchpad / Finder).
+                MainWindow.opener = { openWindow(id: "main") }
+            }
+    }
+}
+
+/// Показ главного окна откуда угодно: Dock, Launchpad, Finder, меню-бар.
+@MainActor
+enum MainWindow {
+    static var opener: (() -> Void)?
+
+    static func isMain(_ w: NSWindow) -> Bool { !(w is DesktopWindow) && w.styleMask.contains(.titled) }
+
+    static func show() {
+        NSApp.setActivationPolicy(.regular)
+        if let w = NSApp.windows.first(where: { isMain($0) && ($0.isVisible || $0.isMiniaturized) }) {
+            if w.isMiniaturized { w.deminiaturize(nil) }
+            w.makeKeyAndOrderFront(nil)
+        } else {
+            opener?()
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        // Окно SwiftUI появляется асинхронно — выводим его вперёд ещё раз
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            NSApp.windows.first(where: { isMain($0) && $0.isVisible })?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 }
 
@@ -72,11 +102,7 @@ struct MenuBarContent: View {
         Toggle(tr("Звук обоев"), isOn: Binding(get: { !app.settings.muted }, set: { app.settings.muted = !$0 }))
         Toggle(tr("Реакция на звук"), isOn: Binding(get: { app.settings.audioReactive }, set: { app.settings.audioReactive = $0 }))
         Divider()
-        Button(tr("Открыть LiveWall…")) {
-            NSApp.setActivationPolicy(.regular)
-            openWindow(id: "main")
-            NSApp.activate(ignoringOtherApps: true)
-        }
+        Button(tr("Открыть LiveWall…")) { MainWindow.show() }
         Button(tr("Выйти")) { NSApp.terminate(nil) }.keyboardShortcut("q")
     }
 }
@@ -115,6 +141,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    /// Клик по иконке в Dock / Launchpad / двойной клик в Finder, когда приложение уже запущено.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        MainWindow.show()
+        return true
+    }
 
     func applicationWillTerminate(_ notification: Notification) {
         AppState.shared.shutdown()

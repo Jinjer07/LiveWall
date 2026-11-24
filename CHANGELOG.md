@@ -2,6 +2,11 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — [SemVer](https://semver.org/lang/ru/).
 
+## [1.2.1] — 2026-11-24
+
+### Исправлено
+- Клик по иконке LiveWall в Dock, Launchpad или Finder, когда приложение уже работает в фоне, теперь открывает главное окно (раньше macOS просто показывала рабочий стол).
+
 ## [1.2.0] — 2026-11-24
 
 ### Добавлено
@@ -59,6 +64,7 @@
 - Назначенные обои сбрасывались при запуске.
 - Глобальный перехват мыши запрашивал «Универсальный доступ» — курсор теперь опрашивается без разрешений.
 
+[1.2.1]: https://github.com/Jinjer07/LiveWall/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Jinjer07/LiveWall/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Jinjer07/LiveWall/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Jinjer07/LiveWall/compare/v0.9.0-beta...v1.0.0
