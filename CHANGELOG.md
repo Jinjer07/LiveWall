@@ -2,6 +2,16 @@
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- **Snow drifts:** they build up faster and taper toward the edges of a window. The mouse pointer now plows snow aside into ridges instead of removing it. Flakes are soft round discs with a calmer sway.
+- **Moving or closing a window:** its drift no longer travels with the window. It stays in place and collapses from the corner, and window frames are polled at 30 Hz while something moves, so drifts do not lag.
+
+### Fixed
+- An empty window edge was drawn as a white line. Only drifts that actually hold snow are drawn now.
+- With Stage Manager on, macOS reports untransformed window frames, so drifts hung in the air. Snow no longer settles on windows while Stage Manager is on (the Snow tab says so).
+
 ## [1.6.0] — 2026-11-24
 
 Most of this release was contributed by [@Nanda070](https://github.com/Nanda070) in [#1](https://github.com/Jinjer07/LiveWall/pull/1).

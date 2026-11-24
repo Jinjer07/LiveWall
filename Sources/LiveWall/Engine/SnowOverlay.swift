@@ -66,10 +66,26 @@ final class SnowCanvas: NSView {
         let x0: CGFloat, x1: CGFloat   // видимый участок верхнего края
         let y: CGFloat
         let winX: CGFloat              // левый край окна (для индекса столбца)
+        var landable = true            // false у сугроба закрытого окна: он только осыпается
+    }
+
+    /// Сугроб на верхнем краю окна. Когда окно двигают, снег съезжает в угол и сбрасывается с него.
+    private struct Pile {
+        var h: [CGFloat]
+        var rect: CGRect
+        var shed: Shed? = nil
+        var ghost = false              // окно закрыто или свёрнуто: сугроб досыпается на старом месте
+        var mass: CGFloat { h.reduce(0, +) }
+    }
+
+    private struct Shed {
+        var dir: CGFloat               // −1 — сползает к левому углу, +1 — к правому
+        var emit: CGFloat = 0          // таймер до следующего комка
+        var t: CGFloat = 0             // сколько уже осыпается
     }
 
     private static let colW: CGFloat = 4
-    private static let maxPile: CGFloat = 12
+    private static let maxPile: CGFloat = 15
 
     var config = SnowConfig() { didSet { if config != oldValue { configChanged() } } }
     var menuBarHeight: CGFloat = 0
@@ -78,11 +94,15 @@ final class SnowCanvas: NSView {
 
     private var flakes: [Flake] = []
     private var surfaces: [Surface] = []
-    private var piles: [Int: [CGFloat]] = [:]
-    private var winRects: [Int: CGRect] = [:]
+    private var piles: [Int: Pile] = [:]
+    private var movingUntil: CFTimeInterval = 0
+    private var ghostSeq = 0
     private var link: CADisplayLink?
     private var time: CGFloat = 0
     private var cursor: CGPoint?
+
+    /// Пока окна двигаются, контроллер опрашивает их чаще, чтобы сугроб не отставал.
+    var windowsAreMoving: Bool { CACurrentMediaTime() < movingUntil || piles.values.contains { $0.shed != nil } }
 
     override var isFlipped: Bool { true }
     override var isOpaque: Bool { false }
@@ -131,18 +151,55 @@ final class SnowCanvas: NSView {
                 }
             }
             for s in spans where s.1 - s.0 > 8 { segs.append(Surface(id: w.id, x0: s.0, x1: s.1, y: y, winX: w.rect.minX)) }
-            // Сугроб едет вместе с окном; при смене ширины подгоняем число столбцов
+
             let n = max(1, Int(w.rect.width / Self.colW))
-            var h = piles[w.id] ?? [CGFloat](repeating: 0, count: n)
-            if h.count != n { h = (0..<n).map { $0 < h.count ? h[$0] : 0 } }
-            piles[w.id] = h
-            winRects[w.id] = w.rect
+            var p = piles[w.id] ?? Pile(h: [CGFloat](repeating: 0, count: n), rect: w.rect)
+            let dx = w.rect.minX - p.rect.minX, dy = w.rect.minY - p.rect.minY, dw = w.rect.width - p.rect.width
+            if abs(dx) > 1.5 || abs(dy) > 1.5 || abs(dw) > 1.5 {
+                movingUntil = CACurrentMediaTime() + 0.45
+                // Окно сдвинули: снег не едет вместе с ним, а остаётся в воздухе и осыпается вниз
+                if p.mass > 0.6 { detach(p, towardRight: dx > 0 ? false : (dx < -1.5 ? true : massCenter(p.h) >= 0.5)) }
+                p.h = [CGFloat](repeating: 0, count: n)
+            }
+            if p.h.count != n { p.h = (0..<n).map { $0 < p.h.count ? p.h[$0] : 0 } }
+            p.rect = w.rect
+            piles[w.id] = p
         }
-        for id in piles.keys where !alive.contains(id) { piles[id] = nil; winRects[id] = nil }   // окно закрыто: снег тает
+        // Окно закрыто, свёрнуто или ушло на другой Space: сугроб осыпается на месте
+        for (id, p) in piles where id > 0 && !alive.contains(id) {
+            if p.mass > 0.6 { detach(p, towardRight: massCenter(p.h) >= 0.5) }
+            piles[id] = nil
+        }
+        for (id, p) in piles where id < 0 {
+            segs.append(Surface(id: id, x0: p.rect.minX + 10, x1: p.rect.maxX - 10, y: p.rect.minY, winX: p.rect.minX, landable: false))
+        }
         surfaces = segs
     }
 
-    func clearSettledSnow() { for k in piles.keys { piles[k] = [CGFloat](repeating: 0, count: piles[k]!.count) } }
+    /// Превращает сугроб в «призрак» на старом месте: он волной осыпается, начиная с угла.
+    private func detach(_ p: Pile, towardRight: Bool) {
+        ghostSeq -= 1
+        var g = p
+        g.ghost = true
+        g.shed = Shed(dir: towardRight ? 1 : -1)
+        piles[ghostSeq] = g
+    }
+
+    private func massCenter(_ h: [CGFloat]) -> CGFloat {
+        let m = h.reduce(0, +)
+        guard m > 0, h.count > 1 else { return 0.5 }
+        var acc: CGFloat = 0
+        for (i, v) in h.enumerated() { acc += v * CGFloat(i) }
+        return acc / m / CGFloat(h.count - 1)
+    }
+
+    func clearSettledSnow() {
+        for k in Array(piles.keys) {
+            guard var p = piles[k] else { continue }
+            p.h = [CGFloat](repeating: 0, count: p.h.count); p.shed = nil
+            piles[k] = p
+        }
+    }
 
     // MARK: Симуляция
 
@@ -169,9 +226,9 @@ final class SnowCanvas: NSView {
                      vx: 0, vy: 0,
                      fall: (22 + depth * 62) * CGFloat.random(in: 0.85...1.2),
                      r: r, phase: .random(in: 0...6.28), depth: depth,
-                     flutter: CGFloat.random(in: 0.7...2.0) * (1.3 - depth * 0.6),
-                     amp: CGFloat.random(in: 6...20) * (1.2 - depth * 0.5),
-                     angle: .random(in: 0...6.28), spin: .random(in: -0.8...0.8))
+                     flutter: CGFloat.random(in: 0.5...1.2),
+                     amp: CGFloat.random(in: 2...8) * (1.1 - depth * 0.4),
+                     angle: 0, spin: 0)
     }
 
     /// Плавный порывистый ветер: сумма медленных волн, чтобы снег то сносило, то успокаивало.
@@ -193,10 +250,10 @@ final class SnowCanvas: NSView {
             var f = flakes[i]
             f.phase += dt
             f.angle += f.spin * dt
-            let flutterX = sin(f.phase * f.flutter) * f.amp + sin(f.phase * f.flutter * 2.3 + 1) * f.amp * 0.3
-            let target = flutterX + wind * 34 * (0.35 + f.depth)
-            f.vx += (target - f.vx) * min(1, dt * 1.4)
-            let bob = sin(f.phase * f.flutter * 1.7) * 5 * (1 - f.depth * 0.5)
+            let flutterX = sin(f.phase * f.flutter) * f.amp
+            let target = flutterX + wind * 20 * (0.35 + f.depth)
+            f.vx += (target - f.vx) * min(1, dt * 0.9)
+            let bob = sin(f.phase * f.flutter * 1.7) * 2
             f.vy += (f.fall + bob - f.vy) * min(1, dt * 1.6)
             if f.life != .infinity {
                 f.life -= dt
@@ -224,13 +281,42 @@ final class SnowCanvas: NSView {
             i += 1
         }
         if config.cursor, let c = cursor { sweep(around: c, radius: R, dt: dt) }
+        shedPiles(dt)
         relaxPiles(dt)
+    }
+
+    /// Осыпание «призрака»: столбцы срываются волной от угла и падают вниз (не вместе с окном).
+    private func shedPiles(_ dt: CGFloat) {
+        for (id, var p) in piles where p.ghost {
+            guard var sh = p.shed else { piles[id] = nil; continue }
+            sh.t += dt
+            let n = p.h.count
+            let reach = Int(sh.t * 520 / Self.colW) + 2          // волна бежит ~520 пт/с
+            var any = false
+            for k in 0..<n {
+                let c = sh.dir < 0 ? k : n - 1 - k
+                guard p.h[c] > 0.05 else { continue }
+                any = true
+                guard k <= reach else { continue }
+                let x = p.rect.minX + (CGFloat(c) + 0.5) * Self.colW
+                let cnt = min(6, max(1, Int(p.h[c] * 0.8)))
+                for _ in 0..<cnt where flakes.count < 4500 {
+                    flakes.append(Flake(x: x + .random(in: -2...2), y: p.rect.minY - .random(in: 0...p.h[c]),
+                                        vx: sh.dir * .random(in: 0...40), vy: .random(in: -10...25), fall: 340,
+                                        r: .random(in: 1.4...3.2) * CGFloat(config.size), phase: .random(in: 0...6.28),
+                                        depth: 0.75, flutter: 1, amp: 1, life: .random(in: 2.0...3.4)))
+                }
+                p.h[c] = 0
+            }
+            if !any { piles[id] = nil } else { p.shed = sh; piles[id] = p }
+        }
     }
 
     /// Сугроб оседает под собственным весом: крутые склоны выравниваются, получаются мягкие холмики.
     private func relaxPiles(_ dt: CGFloat) {
         let k = min(0.5, dt * 6)
-        for (id, var h) in piles where h.count > 2 {
+        for (id, p0) in piles where p0.h.count > 2 && !p0.ghost {
+            var h = p0.h
             var changed = false
             for c in 0..<(h.count - 1) {
                 let d = h[c] - h[c + 1]
@@ -240,28 +326,29 @@ final class SnowCanvas: NSView {
                     changed = true
                 }
             }
-            if changed { piles[id] = h }
+            if changed { piles[id]?.h = h }
         }
     }
 
     /// Снежинка пересекла поверхность сугроба — добавляем снег в столбец.
     private func land(_ f: inout Flake, prevY: CGFloat) -> Bool {
-        for s in surfaces where f.x >= s.x0 && f.x < s.x1 {
-            guard var h = piles[s.id] else { continue }
+        guard CACurrentMediaTime() > movingUntil else { return false }
+        for s in surfaces where s.landable && f.x >= s.x0 && f.x < s.x1 {
+            guard var h = piles[s.id]?.h else { continue }
             let col = min(h.count - 1, max(0, Int((f.x - s.winX) / Self.colW)))
             let top = s.y - h[col]
             if prevY <= top && f.y >= top {
-                let add = f.r * 0.55
+                let add = f.r * 2.0
                 if h[col] < Self.maxPile * CGFloat(config.size.clamped(0.7, 1.6)) {
                     h[col] += add
-                    if col > 0 { h[col - 1] += add * 0.45 }
-                    if col + 1 < h.count { h[col + 1] += add * 0.45 }
-                    piles[s.id] = h
+                    if col > 0 { h[col - 1] += add * 0.55 }
+                    if col + 1 < h.count { h[col + 1] += add * 0.55 }
+                    piles[s.id]?.h = h
                 } else if col > 1, col + 2 < h.count {
                     // Столбец полный — снег сползает на более низкого соседа
                     let side = h[col - 1] <= h[col + 1] ? col - 1 : col + 1
                     h[side] += add * 0.6
-                    piles[s.id] = h
+                    piles[s.id]?.h = h
                 }
                 return true
             }
@@ -269,29 +356,34 @@ final class SnowCanvas: NSView {
         return false
     }
 
-    /// Курсор сметает сугроб и подбрасывает снег в стороны.
+    /// Курсор — как лопата: снег из-под него сдвигается влево и вправо и собирается горками по краям.
     private func sweep(around c: CGPoint, radius R: CGFloat, dt: CGFloat) {
-        for s in surfaces {
-            guard c.y > s.y - R, c.y < s.y + 24, var h = piles[s.id] else { continue }
-            var touched = false
-            let lo = max(s.x0, c.x - R), hi = min(s.x1, c.x + R)
+        let zone: CGFloat = 30                 // полуширина «лопаты»
+        for s in surfaces where s.landable {
+            guard c.y > s.y - 70, c.y < s.y + 22, var h = piles[s.id]?.h else { continue }
+            let lo = max(s.x0, c.x - zone - 40), hi = min(s.x1, c.x + zone + 40)
             guard lo < hi else { continue }
-            let c0 = max(0, Int((lo - s.winX) / Self.colW)), c1 = min(h.count - 1, Int((hi - s.winX) / Self.colW))
+            let c0 = max(1, Int((lo - s.winX) / Self.colW)), c1 = min(h.count - 2, Int((hi - s.winX) / Self.colW))
             guard c0 <= c1 else { continue }
-            for col in c0...c1 where h[col] > 0.2 {
-                let x = s.winX + CGFloat(col) * Self.colW
-                let k = 1 - min(1, abs(x - c.x) / R)
-                let removed = min(h[col], (3 + h[col] * 4) * k * dt * 6)
-                h[col] -= removed
+            let flow = min(0.7, dt * 14)
+            var touched = false
+            // Столбцы под курсором отдают снег наружу, на границе зоны он копится
+            for col in c0...c1 where h[col] > 0.05 {
+                let x = s.winX + (CGFloat(col) + 0.5) * Self.colW
+                let d = x - c.x
+                guard abs(d) < zone else { continue }
+                let m = h[col] * flow
+                h[col] -= m
+                let t = d < 0 ? col - 1 : col + 1        // к ближайшему краю: влево или вправо
+                h[t] += m * 0.9
                 touched = true
-                if flakes.count < 4500, CGFloat.random(in: 0...1) < min(1, removed * 2) {
-                    let dir: CGFloat = x >= c.x ? 1 : -1
-                    flakes.append(Flake(x: x, y: s.y - h[col] - 1, vx: dir * .random(in: 60...180), vy: .random(in: -140 ... -40),
-                                        fall: 40, r: .random(in: 1.2...2.6) * CGFloat(config.size), phase: .random(in: 0...6.28),
-                                        life: .random(in: 0.8...1.8)))
+                if m > 0.25, flakes.count < 4500, CGFloat.random(in: 0...1) < 0.25 {   // немного снежной пыли
+                    flakes.append(Flake(x: x, y: s.y - h[col] - 1, vx: (d < 0 ? -1 : 1) * .random(in: 30...90), vy: .random(in: -70 ... -15),
+                                        fall: 40, r: .random(in: 0.9...1.8) * CGFloat(config.size), phase: .random(in: 0...6.28),
+                                        depth: 0.4, life: .random(in: 0.5...1.1)))
                 }
             }
-            if touched { piles[s.id] = h }
+            if touched { piles[s.id]?.h = h }
         }
     }
 
@@ -319,23 +411,6 @@ final class SnowCanvas: NSView {
         ctx.drawRadialGradient(g, startCenter: c, startRadius: 0, endCenter: c, endRadius: 32, options: [])
     }
 
-    private static let crystalSprite: CGImage? = makeSprite(size: 96) { ctx, c in
-        ctx.setStrokeColor(CGColor(gray: 1, alpha: 0.95)); ctx.setLineCap(.round)
-        for i in 0..<6 {
-            ctx.saveGState()
-            ctx.translateBy(x: c.x, y: c.y); ctx.rotate(by: CGFloat(i) * .pi / 3)
-            ctx.setLineWidth(3.2); ctx.move(to: .zero); ctx.addLine(to: CGPoint(x: 0, y: 36)); ctx.strokePath()
-            ctx.setLineWidth(2.2)
-            for (y, l) in [(16.0, 9.0), (26.0, 6.0)] as [(CGFloat, CGFloat)] {
-                ctx.move(to: CGPoint(x: 0, y: y)); ctx.addLine(to: CGPoint(x: -l, y: y + l * 0.8))
-                ctx.move(to: CGPoint(x: 0, y: y)); ctx.addLine(to: CGPoint(x: l, y: y + l * 0.8))
-            }
-            ctx.strokePath()
-            ctx.restoreGState()
-        }
-        softSprite.map { ctx.setAlpha(0.8); ctx.draw($0, in: CGRect(x: c.x - 14, y: c.y - 14, width: 28, height: 28)) }
-    }
-
     private static func makeSprite(size: Int, _ draw: (CGContext, CGPoint) -> Void) -> CGImage? {
         guard let ctx = CGContext(data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
                                   space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
@@ -345,29 +420,12 @@ final class SnowCanvas: NSView {
 
     private func drawFlakes(_ ctx: CGContext) {
         guard let soft = Self.softSprite else { return }
-        let crystal = Self.crystalSprite
-        // Далёкие рисуем первыми — ближние перекрывают их
-        for pass in 0..<2 {
-            for f in flakes {
-                let near = f.depth > 0.72 && f.r > 3.2 && crystal != nil
-                guard near == (pass == 1) else { continue }
-                let fade: CGFloat = f.life == .infinity ? 1 : min(1, f.life * 1.5)
-                let a = (0.38 + f.depth * 0.6) * fade
-                if near, let crystal {
-                    let d = f.r * 3.0
-                    ctx.saveGState()
-                    ctx.setAlpha(a * 0.9)
-                    ctx.translateBy(x: f.x, y: f.y); ctx.rotate(by: f.angle); ctx.scaleBy(x: 1, y: -1)   // вью перевёрнут
-                    ctx.draw(crystal, in: CGRect(x: -d / 2, y: -d / 2, width: d, height: d))
-                    ctx.restoreGState()
-                } else {
-                    // Очень близкие без кристалла — размытые «боке»: крупнее и прозрачнее
-                    let blur: CGFloat = f.depth > 0.85 ? 1.9 : 1.0
-                    let d = f.r * 2.6 * blur
-                    ctx.setAlpha(a * (blur > 1 ? 0.5 : 1))
-                    ctx.draw(soft, in: CGRect(x: f.x - d / 2, y: f.y - d / 2, width: d, height: d))
-                }
-            }
+        // Далёкие рисуем первыми — ближние перекрывают их. Все снежинки — мягкие круглые, без «стружки».
+        for f in flakes.sorted(by: { $0.depth < $1.depth }) {
+            let fade: CGFloat = f.life == .infinity ? 1 : min(1, f.life * 1.5)
+            let d = f.r * 2.5 * (f.depth > 0.88 ? 1.6 : 1)      // самые близкие — крупные размытые «боке»
+            ctx.setAlpha((0.4 + f.depth * 0.55) * fade * (f.depth > 0.88 ? 0.55 : 1))
+            ctx.draw(soft, in: CGRect(x: f.x - d / 2, y: f.y - d / 2, width: d, height: d))
         }
         ctx.setAlpha(1)
     }
@@ -379,18 +437,23 @@ final class SnowCanvas: NSView {
             CGColor(red: 1, green: 1, blue: 1, alpha: 0.98), CGColor(red: 0.86, green: 0.92, blue: 1, alpha: 0.96)] as CFArray,
             locations: [0, 1])!
         for s in surfaces {
-            guard let h = piles[s.id], !h.isEmpty else { continue }
+            guard let h = piles[s.id]?.h, !h.isEmpty else { continue }
             let c0 = max(0, Int((s.x0 - s.winX) / Self.colW)), c1 = min(h.count - 1, Int((s.x1 - s.winX) / Self.colW))
-            guard c0 < c1 else { continue }
+            guard c0 < c1, (h[c0...c1].max() ?? 0) > 0.8 else { continue }   // пустой край окна не рисуем: раньше он был белой линией
             let p = CGMutablePath(), edge = CGMutablePath()
+            var drawingEdge = false
             p.move(to: CGPoint(x: s.winX + CGFloat(c0) * Self.colW, y: s.y + 0.5))
             for col in c0...c1 {
                 // Сглаживание по пяти столбцам + неподвижная «рябь», чтобы край не был линейкой
                 let a = h[max(0, col - 2)], b = h[max(0, col - 1)], m = h[col], d = h[min(h.count - 1, col + 1)], e = h[min(h.count - 1, col + 2)]
-                let ripple = m > 0.6 ? sin(CGFloat(col) * 1.7 + CGFloat(s.id % 17)) * 0.35 : 0
-                let pt = CGPoint(x: s.winX + (CGFloat(col) + 0.5) * Self.colW, y: s.y - (a + 2 * b + 3 * m + 2 * d + e) / 9 - ripple)
+                let ripple = m > 0.6 ? sin(CGFloat(col) * 1.7 + CGFloat(abs(s.id) % 17)) * 0.35 : 0
+                let xx = s.winX + (CGFloat(col) + 0.5) * Self.colW
+                let toEnd = min(xx - s.x0 + 10, s.x1 - xx + 10)          // у краёв окна сугроб сходит на нет
+                let taper = min(1, max(0.12, toEnd / 30))
+                let pt = CGPoint(x: xx, y: s.y - (a + 2 * b + 3 * m + 2 * d + e) / 9 * (taper * taper * (3 - 2 * taper)) - ripple)
                 p.addLine(to: pt)
-                if col == c0 { edge.move(to: pt) } else { edge.addLine(to: pt) }
+                // Блик только там, где реально лежит снег
+                if s.y - pt.y > 0.5 { if drawingEdge { edge.addLine(to: pt) } else { edge.move(to: pt); drawingEdge = true } } else { drawingEdge = false }
             }
             p.addLine(to: CGPoint(x: s.winX + CGFloat(c1) * Self.colW, y: s.y + 0.5))
             p.closeSubpath()
@@ -549,19 +612,34 @@ final class SnowController {
             o.canvas.config = config
             overlays[info.key] = o
         }
-        if scanTimer == nil {
-            scanTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-                MainActor.assumeIsolated { self?.scan() }
-            }
-        }
+        if scanTimer == nil { scheduleScan(after: 0.1) }
         updatePause()
     }
 
-    private func scan() {
-        guard config.onWindows else { return }
-        for (k, o) in overlays where !paused.contains(k) {
-            o.canvas.updateWindows(SnowWindowScan.windows(on: o.cgBounds))
+    /// 10 раз в секунду в покое и 30, пока окна двигаются или сугробы осыпаются: так сугроб не отстаёт от окна.
+    private func scheduleScan(after delay: TimeInterval) {
+        scanTimer?.invalidate()
+        scanTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated { self?.scan() }
         }
+    }
+
+    /// Stage Manager наклоняет и уменьшает окна, а CGWindowList отдаёт для них обычную рамку.
+    /// Сугроб рисовался бы в воздухе над окном, поэтому при включённом Stage Manager на окна снег не садится.
+    static var stageManagerOn: Bool {
+        UserDefaults(suiteName: "com.apple.WindowManager")?.bool(forKey: "GloballyEnabled") ?? false
+    }
+
+    private func scan() {
+        guard enabled else { return }
+        var fast = false
+        if config.onWindows {
+            for (k, o) in overlays where !paused.contains(k) {
+                o.canvas.updateWindows(Self.stageManagerOn ? [] : SnowWindowScan.windows(on: o.cgBounds))
+                fast = fast || o.canvas.windowsAreMoving
+            }
+        }
+        scheduleScan(after: fast ? 1.0 / 30 : 0.1)
     }
 
     /// Паузы снега не зависят от пауз обоев: у каждого свои переключатели в настройках.
