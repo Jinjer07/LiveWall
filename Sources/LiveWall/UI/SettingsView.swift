@@ -70,8 +70,17 @@ struct SettingsView: View {
             Section {
                 Toggle(tr("Обои реагируют на системный звук"), isOn: b(\.audioReactive))
                 LabeledContent(tr("Состояние")) { Text(app.audioStatus).foregroundStyle(.secondary).multilineTextAlignment(.trailing) }
-                Button(tr("Открыть настройки конфиденциальности")) {
-                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
+                HStack {
+                    if app.audioNeedsPermission {
+                        Button(tr("Выдать доступ")) { app.updateAudioCapture(userInitiated: true) }
+                            .buttonStyle(CrimsonButtonStyle())
+                    }
+                    Button(tr("Открыть настройки конфиденциальности")) {
+                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
+                    }
+                    .buttonStyle(GhostButtonStyle(compact: true))
+                    Button(tr("Перезапустить LiveWall")) { AppRestart.now() }
+                        .buttonStyle(GhostButtonStyle(compact: true))
                 }
             } header: {
                 Text(tr("Аудио-визуализация"))

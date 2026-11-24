@@ -495,6 +495,9 @@ steamcmd не найден ||| steamcmd not found
 Фонари ||| Street lights
 Событие ||| Event
 Музыка ||| Music
+Нет разрешения «Запись экрана и системного звука». Нажмите «Выдать доступ», включите LiveWall в списке и перезапустите приложение. ||| No “Screen & System Audio Recording” permission. Click “Grant access”, enable LiveWall in the list and relaunch the app.
+Выдать доступ ||| Grant access
+Перезапустить LiveWall ||| Relaunch LiveWall
 steamcmd установлен ||| steamcmd installed
 Войдите один раз — пароль уходит только в официальный steamcmd и не сохраняется. ||| Sign in once — your password goes only to the official steamcmd and is never stored.
 Войти ||| Sign in

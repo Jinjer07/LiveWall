@@ -121,7 +121,7 @@ final class AppState: ObservableObject {
 
     private func settingsChanged(old: AppSettings) {
         applyRuntimeSettings()
-        if old.audioReactive != settings.audioReactive { updateAudioCapture() }
+        if old.audioReactive != settings.audioReactive { updateAudioCapture(userInitiated: true) }
         if old.launchAtLogin != settings.launchAtLogin { LoginItem.set(settings.launchAtLogin) }
         if old.spanMode != settings.spanMode { engine.refresh(force: true) }
         if old.language != settings.language {
@@ -134,13 +134,30 @@ final class AppState: ObservableObject {
         if old.nowPlayingWidgets != settings.nowPlayingWidgets || old.calendarWidgets != settings.calendarWidgets { sysInfo.refresh() }
     }
 
-    func updateAudioCapture() {
+    @Published var audioNeedsPermission = false
+
+    /// userInitiated — вызвано кнопкой: тогда можно показать системный запрос macOS.
+    /// При обычном запуске без разрешения запрос не показываем, чтобы не надоедать.
+    func updateAudioCapture(userInitiated: Bool = false) {
         guard settings.audioReactive else {
             audio.stop()
             audioStatus = tr("Выключено")
+            audioNeedsPermission = false
             engine.pushAudio([Float](repeating: 0, count: 128))
             return
         }
+        if !CGPreflightScreenCaptureAccess() {
+            if userInitiated {
+                // Показывает системный запрос (или открывает список в Настройках)
+                if !CGRequestScreenCaptureAccess() {
+                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
+                }
+            }
+            audioNeedsPermission = true
+            audioStatus = tr("Нет разрешения «Запись экрана и системного звука». Нажмите «Выдать доступ», включите LiveWall в списке и перезапустите приложение.")
+            return
+        }
+        audioNeedsPermission = false
         audioStatus = tr("Запуск…")
         Task {
             do {
@@ -232,5 +249,19 @@ final class AppState: ObservableObject {
         case .timeOfDay:
             if let w = pl.slotWallpaper(at: Date()), engine.primaryItemID != w { engine.apply(w, screen: nil) }
         }
+    }
+}
+
+/// Перезапуск приложения (нужен после выдачи разрешений macOS).
+@MainActor
+enum AppRestart {
+    static func now() {
+        let path = Bundle.main.bundlePath
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/sh")
+        p.arguments = ["-c", "sleep 1; /usr/bin/open \"$0\"", path]
+        try? p.run()
+        AppState.shared.shutdown()
+        NSApp.terminate(nil)
     }
 }
