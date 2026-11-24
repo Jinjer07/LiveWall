@@ -18,12 +18,26 @@ enum WEProject {
         return (try? JSONSerialization.jsonObject(with: d)) as? [String: Any]
     }
 
+    /// Пресет: настройки + свои файлы поверх другого проекта (dependency).
+    static func presetBase(_ j: [String: Any], folder: URL) -> URL? {
+        guard j["preset"] is [String: Any], let dep = j["dependency"] as? String else { return nil }
+        let base = folder.deletingLastPathComponent().appendingPathComponent(dep, isDirectory: true)
+        return FileManager.default.fileExists(atPath: base.appendingPathComponent("project.json").path) ? base : nil
+    }
+
     static func info(folder: URL) -> WEProjectInfo? {
         guard let j = readJSON(folder) else { return nil }
+        if let base = presetBase(j, folder: folder), let b = info(folder: base) {
+            return WEProjectInfo(workshopID: folder.lastPathComponent, folder: folder,
+                                 title: clean(j["title"] as? String ?? folder.lastPathComponent),
+                                 type: b.type, preview: (j["preview"] as? String).map { folder.appendingPathComponent($0) },
+                                 supported: b.supported && b.type != "scene")
+        }
         let type = (j["type"] as? String ?? "").lowercased()
         let file = j["file"] as? String
-        let supported = (type == "video" || type == "web") && file != nil
-            && FileManager.default.fileExists(atPath: folder.appendingPathComponent(file!).path)
+        let supported = ((type == "video" || type == "web") && file != nil
+            && FileManager.default.fileExists(atPath: folder.appendingPathComponent(file!).path))
+            || (type == "scene" && WESceneConverter.canConvert(folder: folder))
         return WEProjectInfo(workshopID: folder.lastPathComponent, folder: folder,
                              title: clean(j["title"] as? String ?? folder.lastPathComponent),
                              type: type.isEmpty ? "?" : type,
@@ -34,12 +48,58 @@ enum WEProject {
     static func makeItem(folder: URL) throws -> WallpaperItem {
         guard let j = readJSON(folder), let info = info(folder: folder) else { throw LWError(tr("нет project.json")) }
         guard info.supported else {
-            throw LWError(tr("тип «%@» не поддерживается (поддерживаются video и web; scene — закрытый формат)", info.type))
+            throw LWError(tr("тип «%@» не поддерживается", info.type))
         }
+        let isWorkshop = folder.path.contains("/workshop/content/")
+
+        // Пресет: берём основной проект и подставляем значения и файлы пресета
+        if let base = presetBase(j, folder: folder), let bj = readJSON(base), let preset = j["preset"] as? [String: Any] {
+            var item = try makeItem(folder: base)
+            var lower: [String: Any] = [:]
+            for (k, v) in preset { lower[k.lowercased()] = v }
+            item.properties = item.properties.map { p in
+                var p = p
+                guard let v = lower[p.key.lowercased()] else { return p }
+                if let str = v as? String, str.hasPrefix("files/") || FileManager.default.fileExists(atPath: folder.appendingPathComponent(str).path) && !str.isEmpty {
+                    p.value = .string(folder.appendingPathComponent(str).absoluteString)
+                } else if let b = v as? Bool, p.kind == .bool { p.value = .bool(b) }
+                else if let n = v as? NSNumber { p.value = p.kind == .combo ? .string(n.stringValue) : .number(n.doubleValue) }
+                else if let str = v as? String { p.value = .string(str) }
+                return p
+            }
+            item.title = info.title
+            item.workshopID = isWorkshop ? info.workshopID : nil
+            if let pv = j["preview"] as? String { item.preview = folder.appendingPathComponent(pv).path }
+            item.tags = ((j["tags"] as? [String]) ?? []) + ["preset"]
+            _ = bj
+            return item
+        }
+
+        // Сцена WE → конвертируем в сцену LiveWall (или GIF) в папке библиотеки
+        if info.type == "scene" {
+            let dest = Paths.library.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            try FileManager.default.createDirectory(at: dest, withIntermediateDirectories: true)
+            let out: WESceneConverter.Output
+            do { out = try WESceneConverter.convert(folder: folder, into: dest) } catch {
+                try? FileManager.default.removeItem(at: dest); throw error
+            }
+            var preview: String? = nil
+            if let p = j["preview"] as? String, FileManager.default.fileExists(atPath: folder.appendingPathComponent(p).path) {
+                let name = "we-preview." + (p as NSString).pathExtension
+                try? FileManager.default.copyItem(at: folder.appendingPathComponent(p), to: dest.appendingPathComponent(name))
+                preview = name
+            }
+            var tags = (j["tags"] as? [String]) ?? []
+            tags.append("wallpaper engine")
+            return WallpaperItem(id: UUID().uuidString, title: info.title, type: out.type, folder: dest.path,
+                                 entry: out.entry, preview: preview, tags: tags, source: .steam,
+                                 workshopID: isWorkshop ? info.workshopID : nil,
+                                 properties: DefaultProps.forType(out.type))
+        }
+
         let t: WallpaperType = info.type == "video" ? .video : .web
         var props = t == .video ? DefaultProps.forType(.video) : []
         props += properties(j)
-        let isWorkshop = folder.path.contains("/workshop/content/")
         return WallpaperItem(id: UUID().uuidString, title: info.title, type: t, folder: folder.path,
                              entry: j["file"] as? String ?? "",
                              preview: (j["preview"] as? String),
@@ -99,6 +159,8 @@ enum WEProject {
                     PropertyOption(label: clean($0["label"] as? String ?? str($0["value"])), value: str($0["value"]))
                 }
                 out.append(WallpaperProperty(key: key, label: label, kind: .combo, value: .string(str(p["value"])), options: opts, order: order))
+            case "file", "directory":
+                out.append(WallpaperProperty(key: key, label: label, kind: .text, value: .string(p["value"] as? String ?? ""), order: order))
             case "textinput":
                 out.append(WallpaperProperty(key: key, label: label, kind: .text, value: .string(p["value"] as? String ?? ""), order: order))
             default:
@@ -167,9 +229,14 @@ final class SteamService: ObservableObject {
             : tr("Найдено проектов: %@, поддерживается: %@", out.count, out.filter(\.supported).count)
     }
 
-    func isImported(_ p: WEProjectInfo) -> Bool {
-        app?.library.items.contains { $0.folderURL.standardizedFileURL.path == p.folder.standardizedFileURL.path } ?? false
+    func existing(_ p: WEProjectInfo) -> WallpaperItem? {
+        app?.library.items.first {
+            $0.folderURL.standardizedFileURL.path == p.folder.standardizedFileURL.path
+                || ($0.source == .steam && $0.workshopID != nil && $0.workshopID == p.workshopID)
+        }
     }
+
+    func isImported(_ p: WEProjectInfo) -> Bool { existing(p) != nil }
 
     @discardableResult
     func importProject(_ p: WEProjectInfo) -> WallpaperItem? {
@@ -190,6 +257,29 @@ final class SteamService: ObservableObject {
         var n = 0
         for p in projects where p.supported && !isImported(p) { if importProject(p) != nil { n += 1 } }
         status = tr("Импортировано: %@", n)
+    }
+
+    /// Импортирует все поддерживаемые проекты, собирает из них плейлист «Wallpaper Engine» и включает его.
+    @discardableResult
+    func importAllAsPlaylist() -> Int {
+        scan()
+        guard let app else { return 0 }
+        var ids: [String] = []
+        for p in projects where p.supported {
+            if let it = importProject(p) { ids.append(it.id) }
+            else if let ex = existing(p) { ids.append(ex.id) }
+        }
+        guard !ids.isEmpty else { status = tr("Нет поддерживаемых обоев для импорта"); return 0 }
+        let name = "Wallpaper Engine"
+        if let i = app.playlists.firstIndex(where: { $0.name == name }) {
+            app.playlists[i].items = ids
+        } else {
+            app.playlists.append(Playlist(name: name, items: ids, intervalMinutes: 30))
+        }
+        if let pl = app.playlists.first(where: { $0.name == name }) { app.activatePlaylist(pl.id) }
+        status = tr("Импортировано и добавлено в плейлист: %@", ids.count)
+        app.showToast(status)
+        return ids.count
     }
 
     static func parseID(_ s: String) -> String? {

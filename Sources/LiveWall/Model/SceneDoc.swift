@@ -100,7 +100,7 @@ struct SceneLayer: Codable, Identifiable, Equatable {
     var height: Double = 1080
 }
 
-enum ParticlePreset: String, CaseIterable, Identifiable {
+enum ParticlePreset: String, CaseIterable, Identifiable, Hashable {
     case snow, rain, sparks, dust, fireflies, bubbles
     var id: String { rawValue }
     var title: String {

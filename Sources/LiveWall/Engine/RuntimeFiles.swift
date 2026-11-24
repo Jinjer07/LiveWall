@@ -111,7 +111,12 @@ var V = document.getElementById('v'), I = document.getElementById('i');
 var FIT = {fill:'cover', fit:'contain', stretch:'fill'};
 window.__lwSetMedia = function(o){
   if (o.kind === 'video') { V.style.objectFit = o.fit; V.style.display = 'block'; V.src = o.url; var r = V.play(); if (r && r.catch) r.catch(function(){}); }
-  else { I.style.objectFit = o.fit; I.style.display = 'block'; I.src = o.url; }
+  else {
+    I.style.objectFit = o.fit; I.style.display = 'block';
+    // Пиксель-арт и маленькие GIF масштабируем без размытия
+    I.onload = function(){ if (I.naturalWidth && I.naturalWidth < 900) I.style.imageRendering = 'pixelated'; };
+    I.src = o.url;
+  }
   applyProps(window.__lw ? __lw.props : {});
 };
 function applyProps(p){

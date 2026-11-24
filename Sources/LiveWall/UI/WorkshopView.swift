@@ -21,7 +21,7 @@ struct WorkshopView: View {
     private var form: some View {
         Form {
             Section {
-                Text(LocalizedStringKey(tr("Обои из мастерской Wallpaper Engine (нужен купленный Wallpaper Engine на вашем аккаунте Steam). Поддерживаются типы **video** и **web** — вместе с их настройками. Тип **scene** использует закрытый формат и не поддерживается.")))
+                Text(LocalizedStringKey(tr("Обои из мастерской Wallpaper Engine (нужен купленный Wallpaper Engine на вашем аккаунте Steam). Типы **video** и **web** переносятся как есть, вместе с настройками. Сцены (**scene**) конвертируются в сцены LiveWall: оригинальные картинки, слои, параллакс, частицы и похожие эффекты; анимация персонажей и шейдеры WE не переносятся.")))
                     .font(.callout).foregroundStyle(.secondary)
                 LabeledContent(tr("Папки мастерской")) {
                     VStack(alignment: .trailing, spacing: 2) {
@@ -39,6 +39,12 @@ struct WorkshopView: View {
                     Spacer()
                     if steam.projects.contains(where: { $0.supported && !steam.isImported($0) }) {
                         Button(tr("Импортировать все поддерживаемые")) { steam.importAllSupported() }
+                            .buttonStyle(GhostButtonStyle())
+                    }
+                    if steam.projects.contains(where: { $0.supported }) {
+                        Button { steam.importAllAsPlaylist() } label: {
+                            Label(tr("Импортировать всё и создать плейлист"), systemImage: "play.square.stack.fill")
+                        }
                             .buttonStyle(CrimsonButtonStyle())
                     }
                 }

@@ -351,7 +351,7 @@ API веб-обоев Wallpaper Engine ||| Wallpaper Engine web wallpaper API
 СЕЙЧАС ||| NOW
 Wallpaper Engine из Steam ||| Wallpaper Engine from Steam
 Сканировать ||| Scan
-Обои из мастерской Wallpaper Engine (нужен купленный Wallpaper Engine на вашем аккаунте Steam). Поддерживаются типы **video** и **web** — вместе с их настройками. Тип **scene** использует закрытый формат и не поддерживается. ||| Wallpapers from the Wallpaper Engine Workshop (requires Wallpaper Engine purchased on your Steam account). **video** and **web** types are supported along with their settings. The **scene** type uses a closed format and is not supported.
+Обои из мастерской Wallpaper Engine (нужен купленный Wallpaper Engine на вашем аккаунте Steam). Типы **video** и **web** переносятся как есть, вместе с настройками. Сцены (**scene**) конвертируются в сцены LiveWall: оригинальные картинки, слои, параллакс, частицы и похожие эффекты; анимация персонажей и шейдеры WE не переносятся. ||| Wallpapers from the Wallpaper Engine Workshop (requires Wallpaper Engine purchased on your Steam account). **video** and **web** types are imported as is, with their settings. Scenes (**scene**) are converted to LiveWall scenes: original images, layers, parallax, particles and similar effects; character animation and WE shaders are not carried over.
 Папки мастерской ||| Workshop folders
 не найдены ||| not found
 Указать папку вручную… ||| Choose folder manually…
@@ -495,5 +495,19 @@ steamcmd не найден ||| steamcmd not found
 Фонари ||| Street lights
 Событие ||| Event
 Музыка ||| Music
+тип «%@» не поддерживается ||| type “%@” is not supported
+в сцене нет scene.json ||| the scene has no scene.json
+звук «%@» пропущен ||| sound “%@” skipped
+нет модели %@ ||| missing model %@
+анимация персонажа в «%@» не переносится ||| character animation in “%@” is not carried over
+нет материала у «%@» ||| “%@” has no material
+встроенная текстура «%@» недоступна ||| built-in texture “%@” is unavailable
+текстура «%@»: %@ ||| texture “%@”: %@
+анимированный слой «%@» сохранён как GIF ||| animated layer “%@” saved as GIF
+в сцене не нашлось слоёв, которые можно перенести ||| the scene has no layers that can be converted
+эффект «%@» не переносится ||| effect “%@” is not carried over
+Нет поддерживаемых обоев для импорта ||| No supported wallpapers to import
+Импортировано и добавлено в плейлист: %@ ||| Imported and added to playlist: %@
+Импортировать всё и создать плейлист ||| Import all and create a playlist
 """#
 }

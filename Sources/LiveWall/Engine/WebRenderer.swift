@@ -66,7 +66,8 @@ final class WebRenderer: NSObject, WallpaperRenderer, WKNavigationDelegate, WKSc
         loaded = false
         switch mode {
         case .web:
-            webView.loadFileURL(item.entryURL, allowingReadAccessTo: item.folderURL)
+            // Доступ на чтение шире папки проекта: пресеты WE ссылаются на файлы в соседних папках мастерской
+            webView.loadFileURL(item.entryURL, allowingReadAccessTo: item.source == .steam ? item.folderURL.deletingLastPathComponent() : item.folderURL)
         case .shader:
             webView.loadFileURL(Paths.runtime.appendingPathComponent("shader.html"), allowingReadAccessTo: rootAccess)
         case .scene:
