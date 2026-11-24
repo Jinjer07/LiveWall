@@ -23,6 +23,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 | `iSpectrum` | `sampler2D` | Спектр 64×1 (`texture(iSpectrum, vec2(x, 0.5)).r`) |
 | `iDate` | `vec4` | Год, месяц, день, секунды с начала суток |
 | `iChannel0` | `sampler2D` | Псевдоним `iSpectrum` для кода из Shadertoy |
+| `iAmbient` | `vec4` | x — ночь (0…1), y — «золотой час», z — осадки (0 нет, 1 дождь, 2 снег), w — облачность |
 
 ### Свои настройки
 
@@ -68,6 +69,10 @@ uniform int   u_count;  // Количество [1, 10] = 4
 | `width`, `height` | color | Размер заливки в единицах макета |
 | `pCount`, `pEmitter`, `pSizeMin`, `pSizeMax`, `pSpeed`, `pDirection`, `pSpread`, `pLifetime`, `pGravity`, `pWobble`, `pColor`, `pColor2`, `pShape`, `pMouseRepel`, `pAudio` | particles | Источник `top` / `bottom` / `full` / `point`, форма `soft` / `circle` / `streak` / `image` |
 
+Поля документа сцены: `ambient` (адаптация к времени суток и погоде) и `ambientPrecip` (осадки по погоде, по умолчанию включены).
+
+Токены текстовых слоёв: `{time}` `{time:s}` `{date}` `{weekday}` `{year}`, а также виджеты: `{cpu}` `{ram}` `{battery}` `{charging}` `{track}` `{artist}` `{event}` `{eventTime}` `{temp}` `{weather}` `{city}`.
+
 Свойства сцены в панели: `parallax`, `speed`, `quality` (разрешение рендера, 1 = без Retina-удвоения).
 
 ## Веб-обои
@@ -91,7 +96,10 @@ window.wallpaperRegisterAudioListener(audio => { /* … */ });
 - `requestAnimationFrame` автоматически ограничивается лимитом FPS и останавливается на паузе;
 - события мыши (`mousemove`, `mousedown`, `mouseup`, `click`, pointer-события) приходят, как в обычном браузере;
 - событие `lw-properties` (`CustomEvent`) дублирует `applyUserProperties`;
-- `<video>` и `<audio>` получают громкость из настроек LiveWall.
+- `<video>` и `<audio>` получают громкость из настроек LiveWall;
+- `window.__lw.info` и событие `lw-info` — данные виджетов (те же ключи, что у токенов);
+- `window.__lw.ambient` и событие `lw-ambient` — `{night, golden, precip, intensity, cloud}`;
+- `window.__lw.lang` — язык интерфейса (`ru` / `en`).
 
 ## Пакеты `.wallpkg`
 
@@ -100,3 +108,15 @@ ZIP-архив с содержимым папки обоев и файлом `ma
 ## Проекты Wallpaper Engine
 
 Из `project.json` читаются `type` (`video` / `web`), `file`, `title`, `preview`, `tags` и `general.properties` (типы `slider`, `color`, `bool`, `combo`, `textinput`). Проекты подключаются по ссылке и не копируются.
+
+## Галерея (`gallery/index.json`)
+
+```json
+{ "version": 1, "items": [
+  { "id": "aurora", "type": "shader", "title": {"ru": "Аврора", "en": "Aurora"},
+    "description": {"ru": "…", "en": "…"}, "tags": ["шейдер"],
+    "file": "shaders/aurora.frag", "preview": "previews/aurora.jpg", "version": 1 }
+]}
+```
+
+Приложение читает каталог из `raw.githubusercontent.com/Jinjer07/LiveWall/main/gallery/`. Чтобы обновить превью у пользователей, поднимите `version` элемента.
