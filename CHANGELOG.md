@@ -2,6 +2,14 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — [SemVer](https://semver.org/lang/ru/).
 
+## [1.3.0] — 2026-11-24
+
+### Добавлено
+- **Вход в Steam прямо в LiveWall**, без терминала: логин и пароль, затем подтверждение в Steam Mobile или код Steam Guard. Под капотом работает официальный steamcmd в невидимом псевдотерминале; пароль передаётся только ему и не сохраняется.
+- **Установка steamcmd одной кнопкой** (официальный архив Valve, без Homebrew).
+- **«Синхронизировать мастерскую»**: LiveWall сам берёт список подписок Wallpaper Engine (через встроенное окно steamcommunity.com, вход по QR из Steam Mobile), скачивает новые, конвертирует сцены и добавляет всё в плейлист «Wallpaper Engine».
+- Кнопка «Выйти» сбрасывает сохранённый вход steamcmd и cookies Steam.
+
 ## [1.2.2] — 2026-11-24
 
 ### Исправлено
@@ -69,6 +77,7 @@
 - Назначенные обои сбрасывались при запуске.
 - Глобальный перехват мыши запрашивал «Универсальный доступ» — курсор теперь опрашивается без разрешений.
 
+[1.3.0]: https://github.com/Jinjer07/LiveWall/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/Jinjer07/LiveWall/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/Jinjer07/LiveWall/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Jinjer07/LiveWall/compare/v1.1.0...v1.2.0

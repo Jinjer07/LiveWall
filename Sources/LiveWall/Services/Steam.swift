@@ -191,7 +191,7 @@ final class SteamService: ObservableObject {
             let p = (c as NSString).expandingTildeInPath
             if fm.isExecutableFile(atPath: p) { return p }
         }
-        let cands = ["/opt/homebrew/bin/steamcmd", "/usr/local/bin/steamcmd",
+        let cands = [SteamAccount.bundledSteamCMD.path, "/opt/homebrew/bin/steamcmd", "/usr/local/bin/steamcmd",
                      home.appendingPathComponent("Steam/steamcmd.sh").path,
                      home.appendingPathComponent("steamcmd/steamcmd.sh").path,
                      home.appendingPathComponent("Library/Application Support/Steam/steamcmd.sh").path]
@@ -261,7 +261,7 @@ final class SteamService: ObservableObject {
 
     /// Импортирует все поддерживаемые проекты, собирает из них плейлист «Wallpaper Engine» и включает его.
     @discardableResult
-    func importAllAsPlaylist() -> Int {
+    func importAllAsPlaylist(activate: Bool = true) -> Int {
         scan()
         guard let app else { return 0 }
         var ids: [String] = []
@@ -276,7 +276,7 @@ final class SteamService: ObservableObject {
         } else {
             app.playlists.append(Playlist(name: name, items: ids, intervalMinutes: 30))
         }
-        if let pl = app.playlists.first(where: { $0.name == name }) { app.activatePlaylist(pl.id) }
+        if activate, let pl = app.playlists.first(where: { $0.name == name }) { app.activatePlaylist(pl.id) }
         status = tr("Импортировано и добавлено в плейлист: %@", ids.count)
         app.showToast(status)
         return ids.count

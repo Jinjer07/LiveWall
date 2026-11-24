@@ -18,7 +18,7 @@ struct BinReader {
     var remaining: Int { data.count - pos }
 
     mutating func u32() throws -> UInt32 {
-        guard remaining >= 4 else { throw LWError("неожиданный конец файла") }
+        guard remaining >= 4 else { throw LWError(tr("неожиданный конец файла")) }
         let v = data.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: data.startIndex.distance(to: data.startIndex) + pos, as: UInt32.self) }
         pos += 4
         return UInt32(littleEndian: v)
@@ -27,7 +27,7 @@ struct BinReader {
     mutating func i32() throws -> Int32 { Int32(bitPattern: try u32()) }
 
     mutating func bytes(_ n: Int) throws -> Data {
-        guard n >= 0, remaining >= n else { throw LWError("неожиданный конец файла") }
+        guard n >= 0, remaining >= n else { throw LWError(tr("неожиданный конец файла")) }
         let d = data.subdata(in: data.startIndex + pos ..< data.startIndex + pos + n)
         pos += n
         return d
@@ -36,7 +36,7 @@ struct BinReader {
     /// Строка с длиной в начале (uint32 + байты).
     mutating func lenString() throws -> String {
         let n = Int(try u32())
-        guard n < 4096 else { throw LWError("повреждённая строка") }
+        guard n < 4096 else { throw LWError(tr("повреждённая строка")) }
         return String(decoding: try bytes(n), as: UTF8.self)
     }
 
@@ -61,7 +61,7 @@ struct WEPackage {
         let data = try Data(contentsOf: url, options: .mappedIfSafe)
         var r = BinReader(data)
         let magic = try r.lenString()
-        guard magic.hasPrefix("PKGV") else { throw LWError("не PKG-архив (\(magic))") }
+        guard magic.hasPrefix("PKGV") else { throw LWError(tr("не PKG-архив (%@)", magic)) }
         let count = Int(try r.u32())
         var entries: [(String, Int, Int)] = []
         for _ in 0..<count {
@@ -110,7 +110,7 @@ enum WETexture {
     static func parse(_ data: Data) throws -> Info {
         var r = BinReader(data)
         let m1 = try r.cString(), m2 = try r.cString()
-        guard m1.hasPrefix("TEXV"), m2.hasPrefix("TEXI") else { throw LWError("не TEX (\(m1))") }
+        guard m1.hasPrefix("TEXV"), m2.hasPrefix("TEXI") else { throw LWError(tr("не TEX (%@)", m1)) }
         let format = try r.i32()
         let flags = try r.i32()
         _ = try r.i32(); _ = try r.i32()
@@ -118,10 +118,10 @@ enum WETexture {
         _ = try r.u32()
 
         let container = try r.cString()
-        guard container.hasPrefix("TEXB") else { throw LWError("нет блока TEXB") }
+        guard container.hasPrefix("TEXB") else { throw LWError(tr("нет блока TEXB")) }
         let ver = Int(container.dropFirst(4)) ?? 1
         let imageCount = Int(try r.i32())
-        guard imageCount > 0, imageCount < 512 else { throw LWError("пустая текстура") }
+        guard imageCount > 0, imageCount < 512 else { throw LWError(tr("пустая текстура")) }
         var freeImageFormat: Int32 = -1
         if ver >= 3 { freeImageFormat = try r.i32() }
         if ver >= 4 { _ = try r.i32() }
@@ -129,7 +129,7 @@ enum WETexture {
         var images: [CGImage] = []
         for _ in 0..<imageCount {
             let mipCount = Int(try r.i32())
-            guard mipCount > 0, mipCount < 32 else { throw LWError("нет mip-уровней") }
+            guard mipCount > 0, mipCount < 32 else { throw LWError(tr("нет mip-уровней")) }
             for m in 0..<mipCount {
                 let w = Int(try r.i32()), h = Int(try r.i32())
                 var payload: Data
@@ -205,9 +205,9 @@ enum WETexture {
                 for i in 0..<min(w * h, p.count) { let g = p[i]; rgba[i * 4] = g; rgba[i * 4 + 1] = g; rgba[i * 4 + 2] = g }
             }
         default:
-            throw LWError("неизвестный формат текстуры \(format)")
+            throw LWError(tr("неизвестный формат текстуры %@", format))
         }
-        guard rgba.count >= w * h * 4 else { throw LWError("мало данных текстуры") }
+        guard rgba.count >= w * h * 4 else { throw LWError(tr("мало данных текстуры")) }
         let cw = max(1, min(cropW > 0 ? cropW : w, w)), ch = max(1, min(cropH > 0 ? cropH : h, h))
         return try makeImage(rgba, w: w, h: h, cropW: cw, cropH: ch)
     }
@@ -215,14 +215,14 @@ enum WETexture {
     /// Собирает анимированный GIF из кадров спрайт-листа.
     static func writeGIF(_ info: Info, to url: URL, maxSide: Int = 1920) throws {
         guard let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.gif.identifier as CFString, info.frames.count, nil) else {
-            throw LWError("не удалось создать GIF")
+            throw LWError(tr("не удалось создать GIF"))
         }
         CGImageDestinationSetProperties(dest, [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFLoopCount: 0]] as CFDictionary)
         for f in info.frames where f.image < info.images.count {
             guard let frame = info.images[f.image].cropping(to: f.rect) else { continue }
             CGImageDestinationAddImage(dest, frame, [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFDelayTime: f.delay]] as CFDictionary)
         }
-        guard CGImageDestinationFinalize(dest) else { throw LWError("не удалось записать GIF") }
+        guard CGImageDestinationFinalize(dest) else { throw LWError(tr("не удалось записать GIF")) }
     }
 
     static func makeImage(_ rgba: [UInt8], w: Int, h: Int, cropW: Int, cropH: Int) throws -> CGImage {
@@ -231,7 +231,7 @@ enum WETexture {
         guard let provider = CGDataProvider(data: Data(rgba) as CFData),
               let full = CGImage(width: w, height: h, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: w * 4,
                                  space: cs, bitmapInfo: info, provider: provider, decode: nil,
-                                 shouldInterpolate: true, intent: .defaultIntent) else { throw LWError("не удалось собрать изображение") }
+                                 shouldInterpolate: true, intent: .defaultIntent) else { throw LWError(tr("не удалось собрать изображение")) }
         if cropW == w && cropH == h { return full }
         return full.cropping(to: CGRect(x: 0, y: 0, width: cropW, height: cropH)) ?? full
     }
@@ -258,7 +258,7 @@ enum WETexture {
             let token = Int(s[i]); i += 1
             var lit = token >> 4
             if lit == 15 { while i < s.count { let b = Int(s[i]); i += 1; lit += b; if b != 255 { break } } }
-            guard i + lit <= s.count else { throw LWError("повреждённые данные LZ4") }
+            guard i + lit <= s.count else { throw LWError(tr("повреждённые данные LZ4")) }
             out.append(contentsOf: s[i ..< i + lit]); i += lit
             if i >= s.count { break }
             guard i + 1 < s.count else { break }
@@ -266,7 +266,7 @@ enum WETexture {
             var ml = token & 15
             if ml == 15 { while i < s.count { let b = Int(s[i]); i += 1; ml += b; if b != 255 { break } } }
             ml += 4
-            guard off > 0, off <= out.count else { throw LWError("повреждённые данные LZ4") }
+            guard off > 0, off <= out.count else { throw LWError(tr("повреждённые данные LZ4")) }
             let start = out.count - off
             for k in 0..<ml { out.append(out[start + k]) }
         }

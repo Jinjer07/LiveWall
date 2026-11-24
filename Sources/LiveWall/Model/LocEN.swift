@@ -495,6 +495,55 @@ steamcmd не найден ||| steamcmd not found
 Фонари ||| Street lights
 Событие ||| Event
 Музыка ||| Music
+steamcmd установлен ||| steamcmd installed
+Войдите один раз — пароль уходит только в официальный steamcmd и не сохраняется. ||| Sign in once — your password goes only to the official steamcmd and is never stored.
+Войти ||| Sign in
+Войти в Steam ||| Sign in to Steam
+Всё синхронизировано — новых подписок нет ||| All synced — no new subscriptions
+Вход в Steam ||| Steam sign-in
+Вход в Steam не выполнен ||| Not signed in to Steam
+Вход выполнен ||| Signed in
+Вход выполнен: %@ ||| Signed in: %@
+Вход на steamcommunity.com ||| Sign in to steamcommunity.com
+Вход не выполнен (код %@) ||| Sign-in failed (code %@)
+Готово: добавлено %@ ||| Done: %@ added
+Добавлено из мастерской: %@ ||| Added from Workshop: %@
+Имя аккаунта Steam (не e-mail) ||| Steam account name (not e-mail)
+Код Steam Guard из приложения ||| Steam Guard code from the app
+Код из письма Steam ||| Code from Steam e-mail
+Конвертируем и добавляем в библиотеку… ||| Converting and adding to the library…
+Не удалось скачать steamcmd ||| Couldn’t download steamcmd
+Неверный логин или пароль ||| Wrong login or password
+Новых подписок нет ||| No new subscriptions
+Нужен steamcmd ||| steamcmd required
+Нужен аккаунт, на котором куплен Wallpaper Engine ||| Use the account that owns Wallpaper Engine
+Нужен один раз, чтобы видеть ваши подписки. Можно войти по QR-коду из Steam Mobile. ||| Needed once to see your subscriptions. You can sign in with a QR code from Steam Mobile.
+Официальная утилита Valve для загрузки из мастерской. Установится в папку LiveWall. ||| Valve’s official tool for Workshop downloads. It installs into the LiveWall folder.
+Пароль ||| Password
+Пароль передаётся только официальной утилите Valve steamcmd и нигде не сохраняется. Вход запоминает сам steamcmd. ||| Your password is passed only to Valve’s official steamcmd and is never stored. steamcmd remembers the sign-in itself.
+Подтвердите вход в приложении Steam Mobile на телефоне ||| Confirm the sign-in in the Steam Mobile app on your phone
+Подтвердить ||| Confirm
+Получаем список подписок… ||| Fetching your subscriptions…
+Проверяем вход… ||| Checking sign-in…
+Синхронизация скачает новые подписки Wallpaper Engine и добавит их в плейлист. ||| Sync downloads new Wallpaper Engine subscriptions and adds them to the playlist.
+Синхронизировать мастерскую ||| Sync Workshop
+Скачиваем: %@ из %@ ||| Downloading: %@ of %@
+Слишком много попыток. Подождите немного. ||| Too many attempts. Please wait a bit.
+Сначала установите steamcmd ||| Install steamcmd first
+Устанавливаем steamcmd… ||| Installing steamcmd…
+мало данных текстуры ||| texture data too short
+не PKG-архив (%@) ||| not a PKG archive (%@)
+не TEX (%@) ||| not a TEX file (%@)
+не удалось записать GIF ||| couldn’t write GIF
+не удалось собрать изображение ||| couldn’t build image
+не удалось создать GIF ||| couldn’t create GIF
+неизвестный формат текстуры %@ ||| unknown texture format %@
+неожиданный конец файла ||| unexpected end of file
+нет mip-уровней ||| no mip levels
+нет блока TEXB ||| no TEXB block
+повреждённая строка ||| corrupted string
+повреждённые данные LZ4 ||| corrupted LZ4 data
+пустая текстура ||| empty texture
 тип «%@» не поддерживается ||| type “%@” is not supported
 в сцене нет scene.json ||| the scene has no scene.json
 звук «%@» пропущен ||| sound “%@” skipped

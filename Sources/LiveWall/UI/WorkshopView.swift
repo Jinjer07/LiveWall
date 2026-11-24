@@ -21,6 +21,11 @@ struct WorkshopView: View {
     private var form: some View {
         Form {
             Section {
+                SteamAccountCard()
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+            Section {
                 Text(LocalizedStringKey(tr("Обои из мастерской Wallpaper Engine (нужен купленный Wallpaper Engine на вашем аккаунте Steam). Типы **video** и **web** переносятся как есть, вместе с настройками. Сцены (**scene**) конвертируются в сцены LiveWall: оригинальные картинки, слои, параллакс, частицы и похожие эффекты; анимация персонажей и шейдеры WE не переносятся.")))
                     .font(.callout).foregroundStyle(.secondary)
                 LabeledContent(tr("Папки мастерской")) {

@@ -17,6 +17,7 @@ final class AppState: ObservableObject {
     let ambientService = AmbientService()
     let gallery = GalleryService()
     let updater = UpdateService()
+    let steamAccount = SteamAccount()
     var ambient: AmbientState { ambientService.state }
 
     @Published var settings: AppSettings {
@@ -57,6 +58,7 @@ final class AppState: ObservableObject {
         ambientService.app = self
         gallery.app = self
         updater.app = self
+        steamAccount.app = self
         Loc.lang = Loc.resolve(settings.language)
         playlistIndex = st.playlistIndex
         playlists = st.playlists
@@ -94,6 +96,7 @@ final class AppState: ObservableObject {
         }
         if activePlaylistID != nil { playlistTick() }
         if CommandLine.arguments.contains("--import-workshop") { steam.importAllAsPlaylist() }
+        }
     }
 
     func shutdown() {
