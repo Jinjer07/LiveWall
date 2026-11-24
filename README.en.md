@@ -31,7 +31,7 @@
 | | |
 |---|---|
 | 🎬 **6 wallpaper types** | Video (mp4/mov/webm), web (HTML/JS/WebGL), images and GIFs, slideshows, GLSL shaders, layered scenes |
-| 🧩 **Wallpaper Engine compatible** | Web wallpapers work with `wallpaperPropertyListener` and `wallpaperRegisterAudioListener`; import video/web projects from the Steam Workshop |
+| 🧩 **Wallpaper Engine compatible** | Import your whole Steam Workshop: video and web as is, scenes via the built-in converter (original images, layers, parallax, particles), presets, one-click playlist |
 | 🎨 **Scene editor** | Layers, mouse parallax, particles (snow, rain, sparks, fireflies…), waves, glow, color grading, clock and date |
 | 🖼 **Gallery** | Ready-made scenes and shaders from this repository, one-click install |
 | 🌦 **Time of day & weather** | Scenes get darker at night, warmer at sunset and show rain or snow from real weather |
