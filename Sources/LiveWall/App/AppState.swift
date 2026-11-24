@@ -96,7 +96,6 @@ final class AppState: ObservableObject {
         }
         if activePlaylistID != nil { playlistTick() }
         if CommandLine.arguments.contains("--import-workshop") { steam.importAllAsPlaylist() }
-        }
     }
 
     func shutdown() {
