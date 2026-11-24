@@ -10,20 +10,20 @@ struct OnboardingView: View {
     @Namespace private var ns
 
     private let pages: [(icon: String, kicker: String, title: String, text: String)] = [
-        ("sparkles", "ДОБРО ПОЖАЛОВАТЬ", "Рабочий стол, который живёт",
-         "LiveWall превращает обои в видео, интерактивные сцены, шейдеры и визуализаторы — прямо под иконками рабочего стола."),
-        ("square.grid.3x2.fill", "ЛЮБЫЕ ОБОИ", "Шесть типов обоев",
-         "Видео, веб-страницы, картинки и слайдшоу, GLSL-шейдеры в стиле Shadertoy и сцены из слоёв. Просто перетащите файл в библиотеку."),
-        ("rectangle.stack.fill", "БИБЛИОТЕКА И STEAM", "Ваша коллекция",
-         "Теги, избранное, поиск и плейлисты по таймеру или времени суток. Импорт видео- и веб-обоев из мастерской Wallpaper Engine."),
-        ("square.3.layers.3d", "РЕДАКТОР СЦЕН", "Создавайте своё",
-         "Слои, параллакс от мыши, снег, искры и светлячки, волны и свечение, часы и дата. Перетаскивайте слои прямо в превью."),
-        ("waveform", "ЗВУК", "Обои слышат музыку",
-         "Включите реакцию на звук — сцены, шейдеры и веб-обои будут пульсировать в такт тому, что играет на Mac."),
-        ("bolt.fill", "ПРОИЗВОДИТЕЛЬНОСТЬ", "Умная пауза",
-         "Обои засыпают, когда приложение развёрнуто на весь экран, экран заблокирован или включена работа от батареи. FPS — под вашим контролем."),
-        ("checkmark.seal.fill", "ВСЁ ГОТОВО", "Начнём?",
-         "Пара настроек напоследок — их всегда можно поменять в разделе «Настройки»."),
+        ("sparkles", tr("ДОБРО ПОЖАЛОВАТЬ"), tr("Рабочий стол, который живёт"),
+         tr("LiveWall превращает обои в видео, интерактивные сцены, шейдеры и визуализаторы — прямо под иконками рабочего стола.")),
+        ("square.grid.3x2.fill", tr("ЛЮБЫЕ ОБОИ"), tr("Шесть типов обоев"),
+         tr("Видео, веб-страницы, картинки и слайдшоу, GLSL-шейдеры в стиле Shadertoy и сцены из слоёв. Просто перетащите файл в библиотеку.")),
+        ("rectangle.stack.fill", tr("БИБЛИОТЕКА И STEAM"), tr("Ваша коллекция"),
+         tr("Теги, избранное, поиск и плейлисты по таймеру или времени суток. Импорт видео- и веб-обоев из мастерской Wallpaper Engine.")),
+        ("square.3.layers.3d", tr("РЕДАКТОР СЦЕН"), tr("Создавайте своё"),
+         tr("Слои, параллакс от мыши, снег, искры и светлячки, волны и свечение, часы и дата. Перетаскивайте слои прямо в превью.")),
+        ("waveform", tr("ЗВУК"), tr("Обои слышат музыку"),
+         tr("Включите реакцию на звук — сцены, шейдеры и веб-обои будут пульсировать в такт тому, что играет на Mac.")),
+        ("bolt.fill", tr("ПРОИЗВОДИТЕЛЬНОСТЬ"), tr("Умная пауза"),
+         tr("Обои засыпают, когда приложение развёрнуто на весь экран, экран заблокирован или включена работа от батареи. FPS — под вашим контролем.")),
+        ("checkmark.seal.fill", tr("ВСЁ ГОТОВО"), tr("Начнём?"),
+         tr("Пара настроек напоследок — их всегда можно поменять в разделе «Настройки».")),
     ]
 
     var body: some View {
@@ -40,7 +40,7 @@ struct OnboardingView: View {
                     }
                     Spacer()
                     if page < pages.count - 1 {
-                        Button("Пропустить") { onFinish() }.buttonStyle(GhostButtonStyle(compact: true))
+                        Button(tr("Пропустить")) { onFinish() }.buttonStyle(GhostButtonStyle(compact: true))
                     }
                 }
                 .padding(.horizontal, 32).padding(.top, 34)
@@ -59,7 +59,7 @@ struct OnboardingView: View {
                 Spacer(minLength: 10)
 
                 HStack {
-                    Button { go(page - 1) } label: { Label("Назад", systemImage: "chevron.left") }
+                    Button { go(page - 1) } label: { Label(tr("Назад"), systemImage: "chevron.left") }
                         .buttonStyle(GhostButtonStyle())
                         .opacity(page == 0 ? 0 : 1)
                         .disabled(page == 0)
@@ -85,13 +85,13 @@ struct OnboardingView: View {
 
                     if page < pages.count - 1 {
                         Button { go(page + 1) } label: {
-                            HStack(spacing: 6) { Text("Далее"); Image(systemName: "chevron.right") }
+                            HStack(spacing: 6) { Text(tr("Далее")); Image(systemName: "chevron.right") }
                         }
                         .buttonStyle(CrimsonButtonStyle(large: true))
                         .keyboardShortcut(.rightArrow, modifiers: [])
                     } else {
                         Button { onFinish() } label: {
-                            HStack(spacing: 6) { Text("Начать"); Image(systemName: "arrow.right") }
+                            HStack(spacing: 6) { Text(tr("Начать")); Image(systemName: "arrow.right") }
                         }
                         .buttonStyle(CrimsonButtonStyle(large: true))
                         .keyboardShortcut(.defaultAction)
@@ -160,10 +160,10 @@ struct OnboardingView: View {
 
     private var finalSettings: some View {
         VStack(spacing: 12) {
-            Toggle("Запускать при входе в систему", isOn: Binding(get: { app.settings.launchAtLogin }, set: { app.settings.launchAtLogin = $0 }))
-            Toggle("Реакция на звук", isOn: Binding(get: { app.settings.audioReactive }, set: { app.settings.audioReactive = $0 }))
-            Toggle("Параллакс от мыши", isOn: Binding(get: { app.settings.mouseInteraction }, set: { app.settings.mouseInteraction = $0 }))
-            Toggle("Пауза от батареи", isOn: Binding(get: { app.settings.pauseOnBattery }, set: { app.settings.pauseOnBattery = $0 }))
+            Toggle(tr("Запускать при входе в систему"), isOn: Binding(get: { app.settings.launchAtLogin }, set: { app.settings.launchAtLogin = $0 }))
+            Toggle(tr("Реакция на звук"), isOn: Binding(get: { app.settings.audioReactive }, set: { app.settings.audioReactive = $0 }))
+            Toggle(tr("Параллакс от мыши"), isOn: Binding(get: { app.settings.mouseInteraction }, set: { app.settings.mouseInteraction = $0 }))
+            Toggle(tr("Пауза от батареи"), isOn: Binding(get: { app.settings.pauseOnBattery }, set: { app.settings.pauseOnBattery = $0 }))
         }
         .toggleStyle(CrimsonToggleStyle())
         .foregroundStyle(Theme.text)
@@ -198,8 +198,8 @@ private struct WelcomeArt: View {
 }
 
 private struct TypesArt: View {
-    private let items: [(String, String)] = [("film", "Видео"), ("globe", "Веб"), ("photo", "Картинка"),
-                                             ("photo.on.rectangle", "Слайдшоу"), ("sparkles", "Шейдер"), ("square.3.layers.3d", "Сцена")]
+    private let items: [(String, String)] = [("film", tr("Видео")), ("globe", tr("Веб")), ("photo", tr("Картинка")),
+                                             ("photo.on.rectangle", tr("Слайдшоу")), ("sparkles", tr("Шейдер")), ("square.3.layers.3d", tr("Сцена"))]
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.9)) { tl in
             let active = Int(tl.date.timeIntervalSinceReferenceDate / 0.9) % items.count
@@ -295,7 +295,7 @@ private struct EditorArt: View {
         }
         .onAppear { withAnimation(.spring(response: 0.9, dampingFraction: 0.7).delay(0.15)) { spread = true } }
         .overlay(alignment: .bottom) {
-            Text("Поводите мышью — это параллакс").font(.caption).foregroundStyle(Theme.text3)
+            Text(tr("Поводите мышью — это параллакс")).font(.caption).foregroundStyle(Theme.text3)
         }
     }
 
@@ -361,7 +361,7 @@ private struct PerformanceArt: View {
                 Image(systemName: paused ? "pause.fill" : "play.fill")
                     .font(.system(size: 40, weight: .bold)).foregroundStyle(.white)
                     .contentTransition(.symbolEffect(.replace))
-                Text(paused ? "ПАУЗА" : "30 FPS").font(.system(size: 13, weight: .bold)).tracking(3).foregroundStyle(Theme.text2)
+                Text(paused ? tr("ПАУЗА") : "30 FPS").font(.system(size: 13, weight: .bold)).tracking(3).foregroundStyle(Theme.text2)
             }
             ForEach(0..<3, id: \.self) { i in
                 let icons = ["arrow.up.left.and.arrow.down.right", "battery.25", "lock.fill"]

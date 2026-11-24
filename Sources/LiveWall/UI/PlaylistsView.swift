@@ -8,11 +8,11 @@ struct PlaylistsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PageHeader(title: "Плейлисты", subtitle: "Смена обоев по таймеру или по времени суток") {
+            PageHeader(title: tr("Плейлисты"), subtitle: tr("Смена обоев по таймеру или по времени суток")) {
                 Button {
-                    let pl = Playlist(name: "Плейлист \(app.playlists.count + 1)")
+                    let pl = Playlist(name: tr("Плейлист %@", app.playlists.count + 1))
                     withAnimation(Theme.spring) { app.playlists.append(pl); selectedID = pl.id }
-                } label: { Label("Новый плейлист", systemImage: "plus") }
+                } label: { Label(tr("Новый плейлист"), systemImage: "plus") }
                 .buttonStyle(CrimsonButtonStyle())
             }
             split
@@ -37,7 +37,7 @@ struct PlaylistsView: View {
                 Divider()
                 HStack {
                     Button {
-                        let pl = Playlist(name: "Плейлист \(app.playlists.count + 1)")
+                        let pl = Playlist(name: tr("Плейлист %@", app.playlists.count + 1))
                         app.playlists.append(pl)
                         selectedID = pl.id
                     } label: { Image(systemName: "plus") }
@@ -59,8 +59,8 @@ struct PlaylistsView: View {
                 if let idx = app.playlists.firstIndex(where: { $0.id == selectedID }) {
                     editor(idx)
                 } else {
-                    ContentUnavailableView("Нет плейлиста", systemImage: "list.bullet.rectangle",
-                                           description: Text("Создайте плейлист кнопкой «+»: обои будут меняться по таймеру или по времени суток."))
+                    ContentUnavailableView(tr("Нет плейлиста"), systemImage: "list.bullet.rectangle",
+                                           description: Text(tr("Создайте плейлист кнопкой «+»: обои будут меняться по таймеру или по времени суток.")))
                 }
             }
             .frame(minWidth: 460, maxWidth: .infinity, maxHeight: .infinity)
@@ -74,31 +74,31 @@ struct PlaylistsView: View {
         let active = app.activePlaylistID == pl.wrappedValue.id
         Form {
             Section {
-                TextField("Название", text: pl.name)
-                Picker("Режим", selection: pl.mode) {
-                    Text("По таймеру").tag(PlaylistMode.timer)
-                    Text("По времени суток").tag(PlaylistMode.timeOfDay)
+                TextField(tr("Название"), text: pl.name)
+                Picker(tr("Режим"), selection: pl.mode) {
+                    Text(tr("По таймеру")).tag(PlaylistMode.timer)
+                    Text(tr("По времени суток")).tag(PlaylistMode.timeOfDay)
                 }
                 .pickerStyle(.segmented)
                 HStack {
-                    Button(active ? "Остановить" : "Запустить плейлист") {
+                    Button(active ? tr("Остановить") : tr("Запустить плейлист")) {
                         app.activatePlaylist(active ? nil : pl.wrappedValue.id)
                     }
                     .buttonStyle(CrimsonButtonStyle())
                     if active && pl.wrappedValue.mode == .timer {
-                        Button("Следующие") { app.nextInPlaylist() }
+                        Button(tr("Следующие")) { app.nextInPlaylist() }
                     }
                 }
             }
 
             if pl.wrappedValue.mode == .timer {
-                Section("Смена обоев") {
-                    Picker("Интервал", selection: pl.intervalMinutes) {
+                Section(tr("Смена обоев")) {
+                    Picker(tr("Интервал"), selection: pl.intervalMinutes) {
                         ForEach([1.0, 5, 10, 15, 30, 60, 120, 240, 480, 1440], id: \.self) { m in
-                            Text(m < 60 ? "\(Int(m)) мин" : "\(Int(m / 60)) ч").tag(m)
+                            Text(m < 60 ? tr("%@ мин", Int(m)) : tr("%@ ч", Int(m / 60))).tag(m)
                         }
                     }
-                    Toggle("Случайный порядок", isOn: pl.shuffle)
+                    Toggle(tr("Случайный порядок"), isOn: pl.shuffle)
                 }
                 Section {
                     ForEach(Array(pl.wrappedValue.items.enumerated()), id: \.offset) { i, id in
@@ -107,7 +107,7 @@ struct PlaylistsView: View {
                                 Thumbnail(item: it, version: library.thumbVersion).frame(width: 64)
                                 Text(it.title)
                             } else {
-                                Text("Удалённые обои").foregroundStyle(.secondary)
+                                Text(tr("Удалённые обои")).foregroundStyle(.secondary)
                             }
                             Spacer()
                             Button { move(idx, i, -1) } label: { Image(systemName: "chevron.up") }.disabled(i == 0)
@@ -116,8 +116,8 @@ struct PlaylistsView: View {
                         }
                         .buttonStyle(.borderless)
                     }
-                    Button("Добавить обои…") { showPicker = true }
-                } header: { Text("Обои (\(pl.wrappedValue.items.count))") }
+                    Button(tr("Добавить обои…")) { showPicker = true }
+                } header: { Text(tr("Обои (%@)", pl.wrappedValue.items.count)) }
             } else {
                 Section {
                     ForEach(pl.slots) { $slot in
@@ -139,15 +139,15 @@ struct PlaylistsView: View {
                             .buttonStyle(.borderless)
                         }
                     }
-                    Button("Добавить время") {
+                    Button(tr("Добавить время")) {
                         let last = app.playlists[idx].slots.map(\.hour).max() ?? 6
                         app.playlists[idx].slots.append(TimeSlot(hour: min(23, last + 6), minute: 0, wallpaperID: library.items.first?.id))
                         app.playlists[idx].slots.sort { $0.minutesOfDay < $1.minutesOfDay }
                     }
                 } header: {
-                    Text("Расписание")
+                    Text(tr("Расписание"))
                 } footer: {
-                    Text("С указанного времени и до следующего пункта стоят выбранные обои. Например: 07:00 — утро, 19:00 — вечер, 23:00 — ночь.")
+                    Text(tr("С указанного времени и до следующего пункта стоят выбранные обои. Например: 07:00 — утро, 19:00 — вечер, 23:00 — ночь."))
                 }
             }
         }
@@ -183,9 +183,9 @@ struct ItemPickerSheet: View {
     var body: some View {
         VStack(spacing: 10) {
             HStack {
-                Text("Выберите обои").font(.headline)
+                Text(tr("Выберите обои")).font(.headline)
                 Spacer()
-                TextField("Поиск", text: $search).textFieldStyle(.roundedBorder).frame(width: 200)
+                TextField(tr("Поиск"), text: $search).textFieldStyle(.roundedBorder).frame(width: 200)
             }
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 10)], spacing: 10) {
@@ -205,10 +205,10 @@ struct ItemPickerSheet: View {
                 }
             }
             HStack {
-                Text("Выбрано: \(selected.count)").foregroundStyle(.secondary)
+                Text(tr("Выбрано: %@", selected.count)).foregroundStyle(.secondary)
                 Spacer()
-                Button("Отмена") { dismiss() }
-                Button("Готово") {
+                Button(tr("Отмена")) { dismiss() }
+                Button(tr("Готово")) {
                     onDone(library.items.map(\.id).filter { selected.contains($0) })
                     dismiss()
                 }

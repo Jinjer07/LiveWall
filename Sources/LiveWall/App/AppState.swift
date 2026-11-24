@@ -13,6 +13,11 @@ final class AppState: ObservableObject {
     let mouse = MouseTracker()
     let audio = AudioCapture()
     let audioSubject = PassthroughSubject<[Float], Never>()
+    let sysInfo = SystemInfoService()
+    let ambientService = AmbientService()
+    let gallery = GalleryService()
+    let updater = UpdateService()
+    var ambient: AmbientState { ambientService.state }
 
     @Published var settings: AppSettings {
         didSet {
@@ -25,7 +30,7 @@ final class AppState: ObservableObject {
     @Published var activePlaylistID: String? {
         didSet { if oldValue != activePlaylistID { lastSwitch = Date(); saveState() } }
     }
-    @Published var audioStatus = "Выключено"
+    @Published var audioStatus = tr("Выключено")
     @Published var sidebar: SidebarItem? = .library
     @Published var toast: String?
     @Published var overlay: AppOverlay?
@@ -48,6 +53,11 @@ final class AppState: ObservableObject {
         engine.assignments = st.assignments
         engine.spanItemID = st.spanItemID
         engine.app = self
+        sysInfo.app = self
+        ambientService.app = self
+        gallery.app = self
+        updater.app = self
+        Loc.lang = Loc.resolve(settings.language)
         playlistIndex = st.playlistIndex
         playlists = st.playlists
         activePlaylistID = st.activePlaylistID
@@ -74,6 +84,8 @@ final class AppState: ObservableObject {
         mouse.handler = { [weak self] kind, p in self?.engine.handleMouse(kind, at: p) }
         applyRuntimeSettings()
         updateAudioCapture()
+        ambientService.start()
+        updater.start()
         if firstRun, engine.assignments.isEmpty, let s = library.items.first(where: { $0.type == .scene }) {
             engine.apply(s.id, screen: nil)
         }
@@ -109,16 +121,24 @@ final class AppState: ObservableObject {
         if old.audioReactive != settings.audioReactive { updateAudioCapture() }
         if old.launchAtLogin != settings.launchAtLogin { LoginItem.set(settings.launchAtLogin) }
         if old.spanMode != settings.spanMode { engine.refresh(force: true) }
+        if old.language != settings.language {
+            Loc.lang = Loc.resolve(settings.language)
+            engine.refresh(force: true)   // перезапуск рантаймов с новым языком
+            sysInfo.refresh()
+            ambientService.recompute()
+        }
+        if old.ambientEnabled != settings.ambientEnabled { engine.pushAmbient(ambientService.state) }
+        if old.nowPlayingWidgets != settings.nowPlayingWidgets || old.calendarWidgets != settings.calendarWidgets { sysInfo.refresh() }
     }
 
     func updateAudioCapture() {
         guard settings.audioReactive else {
             audio.stop()
-            audioStatus = "Выключено"
+            audioStatus = tr("Выключено")
             engine.pushAudio([Float](repeating: 0, count: 128))
             return
         }
-        audioStatus = "Запуск…"
+        audioStatus = tr("Запуск…")
         Task {
             do {
                 try await audio.start { [weak self] spectrum in
@@ -127,9 +147,9 @@ final class AppState: ObservableObject {
                         self?.engine.pushAudio(spectrum)
                     }
                 }
-                audioStatus = "Работает"
+                audioStatus = tr("Работает")
             } catch {
-                audioStatus = "Нет доступа: \(error.localizedDescription). Разрешите LiveWall в «Системные настройки → Конфиденциальность и безопасность → Запись экрана и системного звука», затем перезапустите приложение."
+                audioStatus = tr("Нет доступа: %@. Разрешите LiveWall в «Системные настройки → Конфиденциальность и безопасность → Запись экрана и системного звука», затем перезапустите приложение.", error.localizedDescription)
             }
         }
     }

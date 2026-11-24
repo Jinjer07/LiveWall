@@ -16,12 +16,16 @@ protocol WallpaperRenderer: AnyObject {
     func updateAudio(_ spectrum: [Float])
     func mouse(_ kind: MouseKind, _ p: CGPoint)
     func snapshot(_ done: @escaping (NSImage?) -> Void)
+    func setInfo(_ json: String)
+    func setAmbient(_ json: String)
 }
 
 extension WallpaperRenderer {
     func setFPS(_ fps: Int) {}
     func updateAudio(_ spectrum: [Float]) {}
     func mouse(_ kind: MouseKind, _ p: CGPoint) {}
+    func setInfo(_ json: String) {}
+    func setAmbient(_ json: String) {}
 }
 
 @MainActor

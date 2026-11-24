@@ -91,10 +91,10 @@ requestAnimationFrame(frame);
         var doc = SceneDoc()
         doc.background = "#070b1c"
 
-        var sky = SceneLayer(name: "Небо", kind: .color)
+        var sky = SceneLayer(name: tr("Небо"), kind: .color)
         sky.tint = "#0d1740"
         sky.waveEnabled = false
-        var glow = SceneLayer(name: "Сияние", kind: .color)
+        var glow = SceneLayer(name: tr("Сияние"), kind: .color)
         glow.tint = "#5a3fc0"; glow.opacity = 0.45; glow.y = 0.9; glow.height = 700; glow.width = 2600; glow.blend = "add"; glow.feather = 0.5
         glow.waveEnabled = true; glow.waveAmplitude = 2; glow.waveFrequency = 1; glow.waveSpeed = 0.6
         glow.audioPulse = 0.15
@@ -104,12 +104,12 @@ requestAnimationFrame(frame);
         var snow = ParticlePreset.snow.make()
         snow.parallax = 0.5
 
-        var clock = SceneLayer(name: "Часы", kind: .text)
+        var clock = SceneLayer(name: tr("Часы"), kind: .text)
         clock.text = "{time}"; clock.fontSize = 230; clock.fontWeight = "200"; clock.y = 0.42
         clock.parallax = 0.3; clock.glowEnabled = true; clock.glowRadius = 6; clock.glowIntensity = 0.5
         clock.glowColor = "#7fa8ff"; clock.audioPulse = 0.06
 
-        var date = SceneLayer(name: "Дата", kind: .text)
+        var date = SceneLayer(name: tr("Дата"), kind: .text)
         date.text = "{weekday}, {date}"; date.fontSize = 52; date.fontWeight = "400"; date.y = 0.57
         date.opacity = 0.75; date.parallax = 0.3
 
@@ -123,26 +123,26 @@ requestAnimationFrame(frame);
         if let d = try? JSONEncoder.lw.encode(sampleScene()) {
             try? d.write(to: sceneDir.appendingPathComponent("scene.json"))
         }
-        library.add(WallpaperItem(id: UUID().uuidString, title: "Ночные часы", type: .scene, folder: sceneDir.path,
-                                  entry: "scene.json", tags: ["пример", "часы"],
+        library.add(WallpaperItem(id: UUID().uuidString, title: tr("Ночные часы"), type: .scene, folder: sceneDir.path,
+                                  entry: "scene.json", tags: [tr("пример"), tr("часы")],
                                   properties: DefaultProps.forType(.scene)))
 
         // Шейдер
         let shDir = library.newFolder()
         try? shaderTemplate.write(to: shDir.appendingPathComponent("shader.frag"), atomically: true, encoding: .utf8)
-        library.add(WallpaperItem(id: UUID().uuidString, title: "Волны (шейдер)", type: .shader, folder: shDir.path,
-                                  entry: "shader.frag", tags: ["пример"],
+        library.add(WallpaperItem(id: UUID().uuidString, title: tr("Волны (шейдер)"), type: .shader, folder: shDir.path,
+                                  entry: "shader.frag", tags: [tr("пример")],
                                   properties: DefaultProps.forType(.shader) + ShaderParser.properties(from: shaderTemplate)))
 
         // Веб-визуализатор
         let webDir = library.newFolder()
         try? visualizerHTML.write(to: webDir.appendingPathComponent("index.html"), atomically: true, encoding: .utf8)
-        library.add(WallpaperItem(id: UUID().uuidString, title: "Аудио-визуализатор", type: .web, folder: webDir.path,
-                                  entry: "index.html", tags: ["пример", "звук"],
+        library.add(WallpaperItem(id: UUID().uuidString, title: tr("Аудио-визуализатор"), type: .web, folder: webDir.path,
+                                  entry: "index.html", tags: [tr("пример"), tr("звук")],
                                   properties: [
-                                    WallpaperProperty(key: "barcolor", label: "Цвет полос", kind: .color, value: .string("0.3 0.7 1"), order: 0),
-                                    WallpaperProperty(key: "bars", label: "Количество полос", kind: .slider, value: .number(48), min: 8, max: 64, step: 1, order: 1),
-                                    WallpaperProperty(key: "mirror", label: "Отражение", kind: .bool, value: .bool(true), order: 2),
+                                    WallpaperProperty(key: "barcolor", label: tr("Цвет полос"), kind: .color, value: .string("0.3 0.7 1"), order: 0),
+                                    WallpaperProperty(key: "bars", label: tr("Количество полос"), kind: .slider, value: .number(48), min: 8, max: 64, step: 1, order: 1),
+                                    WallpaperProperty(key: "mirror", label: tr("Отражение"), kind: .bool, value: .bool(true), order: 2),
                                   ]))
     }
 }

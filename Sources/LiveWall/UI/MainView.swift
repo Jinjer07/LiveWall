@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Combine
 
 /// Корневой экран: заставка → условия → онбординг → приложение.
 struct RootView: View {
@@ -14,7 +15,7 @@ struct RootView: View {
             Theme.bg.ignoresSafeArea()
             // Когда окно закрыто, свёрнуто или полностью перекрыто — интерфейс выгружается,
             // чтобы анимации SwiftUI не тратили CPU и не будили WindowServer.
-            if windowVisible { content }
+            if windowVisible { content.id(app.settings.language) }
         }
         .background(WindowVisibilityReader(visible: $windowVisible))
     }
@@ -133,10 +134,13 @@ struct MainView: View {
             Rectangle().fill(Theme.stroke).frame(width: 1)
             ZStack {
                 Theme.bg2
-                content
+                VStack(spacing: 0) {
+                    UpdateBanner()
+                    content
                     .id(app.sidebar ?? .library)
                     .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 16)),
                                             removal: .opacity))
+                }
             }
             .animation(Theme.spring, value: app.sidebar)
         }
@@ -162,6 +166,7 @@ struct MainView: View {
     private var content: some View {
         switch app.sidebar ?? .library {
         case .library: LibraryView()
+        case .gallery: GalleryView()
         case .playlists: PlaylistsView()
         case .workshop: WorkshopView()
         case .editor: SceneEditorView(model: app.sceneEditor)
@@ -188,16 +193,16 @@ struct Sidebar: View {
                     LogoMark(size: 30)
                     VStack(alignment: .leading, spacing: 0) {
                         Text("LiveWall").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.text)
-                        Text("живые обои").font(.system(size: 11)).foregroundStyle(Theme.text3)
+                        Text(tr("живые обои")).font(.system(size: 11)).foregroundStyle(Theme.text3)
                     }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 40)
                 .padding(.bottom, 18)
 
-                section("ОБОИ", [.library, .playlists, .workshop])
-                section("СОЗДАНИЕ", [.editor])
-                section("ПРИЛОЖЕНИЕ", [.settings])
+                section(tr("ОБОИ"), [.library, .gallery, .playlists, .workshop])
+                section(tr("СОЗДАНИЕ"), [.editor])
+                section(tr("ПРИЛОЖЕНИЕ"), [.settings])
 
                 Spacer()
                 NowPlayingCard()
@@ -289,7 +294,7 @@ struct NowPlayingCard: View {
                 if item != nil && !engine.userPaused { LiveDot() } else {
                     Circle().fill(Theme.text3).frame(width: 7, height: 7)
                 }
-                Text(item == nil ? "НЕТ ОБОЕВ" : (engine.userPaused ? "НА ПАУЗЕ" : "СЕЙЧАС"))
+                Text(item == nil ? tr("НЕТ ОБОЕВ") : (engine.userPaused ? tr("НА ПАУЗЕ") : tr("СЕЙЧАС")))
                     .font(.system(size: 10, weight: .bold)).tracking(2)
                     .foregroundStyle(engine.userPaused ? Theme.text3 : Theme.scarlet)
                 Spacer()
@@ -318,11 +323,11 @@ struct NowPlayingCard: View {
                         .contentTransition(.symbolEffect(.replace))
                 }
                 .buttonStyle(IconButtonStyle())
-                .help("Звук обоев")
+                .help(tr("Звук обоев"))
             }
         }
         .panel(radius: 12, padding: 10)
-        .onReceive(app.audioSubject) { s in
+        .onReceive(app.audioSubject.throttle(for: .milliseconds(80), scheduler: RunLoop.main, latest: true)) { s in
             var out = [Float](repeating: 0, count: 16)
             for i in 0..<16 { out[i] = (s[i * 4] + s[64 + i * 4]) * 0.5 }
             withAnimation(.linear(duration: 0.08)) { levels = out }

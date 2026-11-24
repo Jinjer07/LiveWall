@@ -18,7 +18,8 @@ enum WebViewFactory {
         cfg.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
         cfg.setValue(true, forKey: "allowUniversalAccessFromFileURLs")
         let uc = WKUserContentController()
-        uc.addUserScript(WKUserScript(source: RuntimeFiles.bridge, injectionTime: .atDocumentStart, forMainFrameOnly: false))
+        uc.addUserScript(WKUserScript(source: RuntimeFiles.bridge.replacingOccurrences(of: "__LANG__", with: Loc.lang),
+                                      injectionTime: .atDocumentStart, forMainFrameOnly: false))
         uc.add(WeakScriptHandler(handler), name: "lw")
         cfg.userContentController = uc
         let wv = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 450), configuration: cfg)
@@ -113,6 +114,8 @@ final class WebRenderer: NSObject, WallpaperRenderer, WKNavigationDelegate, WKSc
     func setVolume(_ v: Float) { js("__lwVolume(\(v))") }
     func setFPS(_ fps: Int) { js("__lwFPS(\(fps))") }
     func applyProperties(_ props: [WallpaperProperty]) { js("__lwProps(\(props.jsonForJS))") }
+    func setInfo(_ json: String) { js("__lwInfo(\(json))") }
+    func setAmbient(_ json: String) { js("__lwAmbient(\(json))") }
 
     func updateAudio(_ s: [Float]) {
         guard loaded, !paused, !stopped else { return }
@@ -151,11 +154,11 @@ final class WebRenderer: NSObject, WallpaperRenderer, WKNavigationDelegate, WKSc
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        onError?("Ошибка загрузки: \(error.localizedDescription)")
+        onError?(tr("Ошибка загрузки: %@", error.localizedDescription))
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        onError?("Ошибка загрузки: \(error.localizedDescription)")
+        onError?(tr("Ошибка загрузки: %@", error.localizedDescription))
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {

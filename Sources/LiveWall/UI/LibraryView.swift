@@ -36,9 +36,9 @@ struct LibraryView: View {
     var body: some View {
         HStack(spacing: 0) {
             VStack(spacing: 0) {
-                PageHeader(title: "Библиотека", subtitle: "\(library.items.count) обоев · двойной клик — применить") {
+                PageHeader(title: tr("Библиотека"), subtitle: tr("%@ обоев · двойной клик — применить", library.items.count)) {
                     HStack(spacing: 10) {
-                        SearchField(text: $search, prompt: "Поиск").frame(width: 200)
+                        SearchField(text: $search, prompt: tr("Поиск")).frame(width: 200)
                         addMenu
                     }
                 }
@@ -48,10 +48,10 @@ struct LibraryView: View {
                     }
                     if !library.allTags.isEmpty {
                         Menu {
-                            Button("Все теги") { tagFilter = nil }
+                            Button(tr("Все теги")) { tagFilter = nil }
                             ForEach(library.allTags, id: \.self) { t in Button("#\(t)") { tagFilter = t } }
                         } label: {
-                            Label(tagFilter.map { "#\($0)" } ?? "Теги", systemImage: "number")
+                            Label(tagFilter.map { "#\($0)" } ?? tr("Теги"), systemImage: "number")
                         }
                         .menuStyle(.borderlessButton)
                         .fixedSize()
@@ -85,7 +85,7 @@ struct LibraryView: View {
                             .font(.system(size: 64)).foregroundStyle(Theme.redGradient)
                             .crimsonGlow(20)
                             .symbolEffect(.bounce, options: .repeating)
-                        Text("Отпустите, чтобы добавить в библиотеку")
+                        Text(tr("Отпустите, чтобы добавить в библиотеку"))
                             .font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.text)
                     }
                 }
@@ -108,7 +108,7 @@ struct LibraryView: View {
                                   active: engine.inUse.contains(item.id), version: library.thumbVersion)
                         .onTapGesture(count: 2) {
                             app.apply(item.id)
-                            app.showToast("Применено: \(item.title)")
+                            app.showToast(tr("Применено: %@", item.title))
                         }
                         .onTapGesture { withAnimation(Theme.spring) { selectedID = item.id } }
                         .contextMenu { contextMenu(item) }
@@ -121,29 +121,29 @@ struct LibraryView: View {
         }
         .overlay {
             if library.items.isEmpty {
-                EmptyState(icon: "photo.on.rectangle.angled", title: "Библиотека пуста",
-                           text: "Перетащите сюда видео, картинки, GIF, папки с веб-обоями, шейдеры .frag или пакеты .wallpkg")
+                EmptyState(icon: "photo.on.rectangle.angled", title: tr("Библиотека пуста"),
+                           text: tr("Перетащите сюда видео, картинки, GIF, папки с веб-обоями, шейдеры .frag или пакеты .wallpkg"))
             } else if items.isEmpty {
-                EmptyState(icon: "magnifyingglass", title: "Ничего не найдено", text: "Попробуйте другой запрос или фильтр")
+                EmptyState(icon: "magnifyingglass", title: tr("Ничего не найдено"), text: tr("Попробуйте другой запрос или фильтр"))
             }
         }
     }
 
     private var addMenu: some View {
         Menu {
-            Button("Импортировать файлы или папки…") { report(library.importURLs(Panels.openFiles())) }
-            Button("Импортировать пакет .wallpkg…") {
+            Button(tr("Импортировать файлы или папки…")) { report(library.importURLs(Panels.openFiles())) }
+            Button(tr("Импортировать пакет .wallpkg…")) {
                 let urls = Panels.openFiles(types: [UTType(filenameExtension: "wallpkg") ?? .zip], directories: false)
                 report(library.importURLs(urls))
             }
             Divider()
-            Button("Новый шейдер") {
+            Button(tr("Новый шейдер")) {
                 let it = library.createShader()
                 withAnimation(Theme.spring) { selectedID = it.id }
             }
-            Button("Новая сцена…") { app.openEditor(nil) }
+            Button(tr("Новая сцена…")) { app.openEditor(nil) }
         } label: {
-            Label("Добавить", systemImage: "plus")
+            Label(tr("Добавить"), systemImage: "plus")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 14).padding(.vertical, 7)
@@ -158,8 +158,8 @@ struct LibraryView: View {
 
     private func label(for f: Filter) -> String {
         switch f {
-        case .all: return "Все"
-        case .favorites: return "Избранное"
+        case .all: return tr("Все")
+        case .favorites: return tr("Избранное")
         case .type(let t): return t.title
         }
     }
@@ -174,21 +174,21 @@ struct LibraryView: View {
 
     @ViewBuilder
     private func contextMenu(_ item: WallpaperItem) -> some View {
-        Button("Применить на все экраны") { app.apply(item.id) }
+        Button(tr("Применить на все экраны")) { app.apply(item.id) }
         if engine.screens.count > 1 && !app.settings.spanMode {
-            Menu("Применить на экран") {
+            Menu(tr("Применить на экран")) {
                 ForEach(engine.screens) { s in Button(s.name) { app.apply(item.id, screen: s.key) } }
             }
         }
         Divider()
-        Button(item.favorite ? "Убрать из избранного" : "В избранное") {
+        Button(item.favorite ? tr("Убрать из избранного") : tr("В избранное")) {
             var it = item; it.favorite.toggle(); library.update(it)
         }
-        if item.type == .scene { Button("Открыть в редакторе") { app.openEditor(item) } }
-        Button("Показать в Finder") { NSWorkspace.shared.activateFileViewerSelecting([item.entryURL]) }
-        Button("Экспорт в .wallpkg…") { export(item) }
+        if item.type == .scene { Button(tr("Открыть в редакторе")) { app.openEditor(item) } }
+        Button(tr("Показать в Finder")) { NSWorkspace.shared.activateFileViewerSelecting([item.entryURL]) }
+        Button(tr("Экспорт в .wallpkg…")) { export(item) }
         Divider()
-        Button("Удалить", role: .destructive) {
+        Button(tr("Удалить"), role: .destructive) {
             if selectedID == item.id { selectedID = nil }
             app.remove(item)
         }
@@ -196,16 +196,16 @@ struct LibraryView: View {
 
     private func export(_ item: WallpaperItem) {
         guard let url = Panels.save(name: item.title + ".wallpkg", ext: "wallpkg") else { return }
-        do { try library.exportPackage(item, to: url); app.showToast("Экспортировано: \(url.lastPathComponent)") }
-        catch { app.showToast("Ошибка экспорта: \(error.localizedDescription)") }
+        do { try library.exportPackage(item, to: url); app.showToast(tr("Экспортировано: %@", url.lastPathComponent)) }
+        catch { app.showToast(tr("Ошибка экспорта: %@", error.localizedDescription)) }
     }
 
     private func report(_ r: (imported: [WallpaperItem], errors: [String])) {
         if let first = r.imported.first { withAnimation(Theme.spring) { selectedID = first.id } }
         if !r.errors.isEmpty {
-            app.showToast("Не удалось: " + r.errors.joined(separator: "; "))
+            app.showToast(tr("Не удалось: ") + r.errors.joined(separator: "; "))
         } else if !r.imported.isEmpty {
-            app.showToast("Добавлено: \(r.imported.count)")
+            app.showToast(tr("Добавлено: %@", r.imported.count))
         }
     }
 
@@ -280,7 +280,7 @@ struct WallpaperCard: View {
                 .overlay(alignment: .topTrailing) {
                     HStack(spacing: 5) {
                         if active {
-                            HStack(spacing: 5) { LiveDot(); Text("LIVE").font(.system(size: 10, weight: .heavy)) }
+                            HStack(spacing: 5) { LiveDot(animated: false); Text("LIVE").font(.system(size: 10, weight: .heavy)) }
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 8).padding(.vertical, 4)
                                 .background(Capsule().fill(Theme.crimson.opacity(0.85)))
@@ -312,9 +312,9 @@ struct WallpaperCard: View {
                         radius: selected || hover ? 16 : 6, y: hover ? 8 : 3)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(item.title).font(.system(size: 12.5, weight: .semibold))
+                Text(tr(item.title)).font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(selected ? Theme.scarlet : Theme.text).lineLimit(1)
-                Text(item.tags.isEmpty ? item.type.title : item.tags.map { "#\($0)" }.joined(separator: " "))
+                Text(item.tags.isEmpty ? item.type.title : item.tags.map { "#" + tr($0) }.joined(separator: " "))
                     .font(.system(size: 11.5)).foregroundStyle(Theme.text3).lineLimit(1)
             }
             .padding(.horizontal, 2)

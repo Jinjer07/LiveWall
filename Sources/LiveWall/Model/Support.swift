@@ -86,7 +86,7 @@ enum Shell {
         p.waitUntilExit()
         let out = String(data: data, encoding: .utf8) ?? ""
         if p.terminationStatus != 0 {
-            throw LWError(out.isEmpty ? "Команда завершилась с кодом \(p.terminationStatus)" : out)
+            throw LWError(out.isEmpty ? tr("Команда завершилась с кодом %@", p.terminationStatus) : out)
         }
         return out
     }
@@ -141,6 +141,39 @@ extension NSImage {
 @MainActor
 enum ThumbCache {
     private static var cache: [String: NSImage] = [:]
+    private static var order: [String] = []
+    private static let limit = 200
+
+    static func key(for url: URL) -> String? {
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let mod = attrs[.modificationDate] as? Date else { return nil }
+        return url.path + "#\(mod.timeIntervalSince1970)"
+    }
+
+    /// Только из кэша, без чтения с диска.
+    static func cached(_ url: URL?) -> NSImage? {
+        guard let url, let k = key(for: url) else { return nil }
+        return cache[k]
+    }
+
+    /// Декодирование в фоне, затем кэш (LRU на 200 картинок).
+    static func load(_ url: URL?) async -> NSImage? {
+        guard let url, let k = key(for: url) else { return nil }
+        if let img = cache[k] { return img }
+        let cg: CGImage? = await Task.detached(priority: .utility) {
+            let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
+                                         kCGImageSourceThumbnailMaxPixelSize: 640,
+                                         kCGImageSourceCreateThumbnailWithTransform: true]
+            guard let src = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+            return CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary)
+        }.value
+        guard let cg else { return nil }
+        let img = NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
+        cache[k] = img
+        order.append(k)
+        if order.count > limit { cache[order.removeFirst()] = nil }
+        return img
+    }
 
     static func image(for url: URL?) -> NSImage? {
         guard let url else { return nil }

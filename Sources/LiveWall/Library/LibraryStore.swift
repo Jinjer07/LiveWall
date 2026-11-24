@@ -118,7 +118,7 @@ final class LibraryStore: ObservableObject {
                 return WallpaperItem(id: UUID().uuidString, title: title, type: .slideshow, folder: url.path,
                                      entry: "", properties: DefaultProps.forType(.slideshow))
             }
-            throw LWError("в папке нет видео/картинок, index.html, scene.json или project.json")
+            throw LWError(tr("в папке нет видео/картинок, index.html, scene.json или project.json"))
         }
 
         let ext = url.pathExtension.lowercased()
@@ -131,7 +131,7 @@ final class LibraryStore: ObservableObject {
         if FileKinds.video.contains(ext) { type = .video }
         else if FileKinds.image.contains(ext) { type = .image }
         else if FileKinds.shader.contains(ext) { type = .shader }
-        else { throw LWError("неподдерживаемый формат .\(ext)") }
+        else { throw LWError(tr("неподдерживаемый формат .%@", ext)) }
 
         let dest = newFolder()
         let name = url.lastPathComponent
@@ -156,7 +156,7 @@ final class LibraryStore: ObservableObject {
         let dest = newFolder()
         let src = Samples.shaderTemplate
         try? src.write(to: dest.appendingPathComponent("shader.frag"), atomically: true, encoding: .utf8)
-        let item = WallpaperItem(id: UUID().uuidString, title: "Новый шейдер", type: .shader, folder: dest.path,
+        let item = WallpaperItem(id: UUID().uuidString, title: tr("Новый шейдер"), type: .shader, folder: dest.path,
                                  entry: "shader.frag",
                                  properties: DefaultProps.forType(.shader) + ShaderParser.properties(from: src))
         add(item)
@@ -189,7 +189,7 @@ final class LibraryStore: ObservableObject {
         do {
             try Shell.run("/usr/bin/ditto", ["-x", "-k", url.path, dest.path])
             guard var m = Persistence.load(WallpaperItem.self, from: dest.appendingPathComponent("manifest.json")) else {
-                throw LWError("в пакете нет manifest.json")
+                throw LWError(tr("в пакете нет manifest.json"))
             }
             m.id = UUID().uuidString
             m.folder = dest.path

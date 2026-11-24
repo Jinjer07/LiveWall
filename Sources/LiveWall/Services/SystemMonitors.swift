@@ -125,10 +125,19 @@ final class MouseTracker {
     private var downOnDesktop = false
     private var running = false
 
+    private var wallpaperActive = true
+
+    /// Опрос курсора нужен только пока обои видны и не на паузе.
+    func setActive(_ active: Bool) {
+        guard active != wallpaperActive else { return }
+        wallpaperActive = active
+        if running { stop(); start() }
+    }
+
     func start() {
         running = true
-        if pollTimer == nil {
-            pollTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+        if pollTimer == nil && wallpaperActive {
+            pollTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 25.0, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated { self?.poll() }
             }
         }

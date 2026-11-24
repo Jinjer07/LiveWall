@@ -7,7 +7,7 @@ struct LiveWallApp: App {
     @StateObject private var app = AppState.shared
 
     var body: some Scene {
-        Window("LiveWall — живые обои", id: "main") {
+        Window(tr("LiveWall — живые обои"), id: "main") {
             RootView()
                 .environmentObject(app)
                 .environmentObject(app.library)
@@ -45,35 +45,39 @@ struct MenuBarContent: View {
 
     var body: some View {
         if let item = library.item(engine.primaryItemID) {
-            Text("Сейчас: \(item.title)")
+            Text(tr("Сейчас: %@", item.title))
         } else {
-            Text("Обои не выбраны")
+            Text(tr("Обои не выбраны"))
         }
-        Button(engine.userPaused ? "Продолжить" : "Пауза") { engine.userPaused.toggle() }
+        if case .available(let v) = app.updater.state {
+            Button(tr("Обновить до %@", v)) { app.updater.installUpdate() }
+            Divider()
+        }
+        Button(engine.userPaused ? tr("Продолжить") : tr("Пауза")) { engine.userPaused.toggle() }
         if app.activePlaylist?.mode == .timer {
-            Button("Следующие обои") { app.nextInPlaylist() }
+            Button(tr("Следующие обои")) { app.nextInPlaylist() }
         }
-        Menu("Плейлист") {
-            Button(app.activePlaylistID == nil ? "✓ Без плейлиста" : "Без плейлиста") { app.activatePlaylist(nil) }
+        Menu(tr("Плейлист")) {
+            Button(app.activePlaylistID == nil ? tr("✓ Без плейлиста") : tr("Без плейлиста")) { app.activatePlaylist(nil) }
             ForEach(app.playlists) { pl in
                 Button((app.activePlaylistID == pl.id ? "✓ " : "") + pl.name) { app.activatePlaylist(pl.id) }
             }
         }
         let favs = library.items.filter(\.favorite)
         if !favs.isEmpty {
-            Menu("Избранное") {
+            Menu(tr("Избранное")) {
                 ForEach(favs) { it in Button(it.title) { app.apply(it.id) } }
             }
         }
-        Toggle("Звук обоев", isOn: Binding(get: { !app.settings.muted }, set: { app.settings.muted = !$0 }))
-        Toggle("Реакция на звук", isOn: Binding(get: { app.settings.audioReactive }, set: { app.settings.audioReactive = $0 }))
+        Toggle(tr("Звук обоев"), isOn: Binding(get: { !app.settings.muted }, set: { app.settings.muted = !$0 }))
+        Toggle(tr("Реакция на звук"), isOn: Binding(get: { app.settings.audioReactive }, set: { app.settings.audioReactive = $0 }))
         Divider()
-        Button("Открыть LiveWall…") {
+        Button(tr("Открыть LiveWall…")) {
             NSApp.setActivationPolicy(.regular)
             openWindow(id: "main")
             NSApp.activate(ignoringOtherApps: true)
         }
-        Button("Выйти") { NSApp.terminate(nil) }.keyboardShortcut("q")
+        Button(tr("Выйти")) { NSApp.terminate(nil) }.keyboardShortcut("q")
     }
 }
 

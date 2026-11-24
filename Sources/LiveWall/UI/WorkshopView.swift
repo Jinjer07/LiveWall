@@ -9,8 +9,8 @@ struct WorkshopView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PageHeader(title: "Мастерская", subtitle: "Wallpaper Engine из Steam") {
-                Button { steam.scan() } label: { Label("Сканировать", systemImage: "arrow.clockwise") }
+            PageHeader(title: tr("Мастерская"), subtitle: tr("Wallpaper Engine из Steam")) {
+                Button { steam.scan() } label: { Label(tr("Сканировать"), systemImage: "arrow.clockwise") }
                     .buttonStyle(GhostButtonStyle())
             }
             form
@@ -21,35 +21,35 @@ struct WorkshopView: View {
     private var form: some View {
         Form {
             Section {
-                Text("Обои из мастерской Wallpaper Engine (нужен купленный Wallpaper Engine на вашем аккаунте Steam). Поддерживаются типы **video** и **web** — вместе с их настройками. Тип **scene** использует закрытый формат и не поддерживается.")
+                Text(LocalizedStringKey(tr("Обои из мастерской Wallpaper Engine (нужен купленный Wallpaper Engine на вашем аккаунте Steam). Поддерживаются типы **video** и **web** — вместе с их настройками. Тип **scene** использует закрытый формат и не поддерживается.")))
                     .font(.callout).foregroundStyle(.secondary)
-                LabeledContent("Папки мастерской") {
+                LabeledContent(tr("Папки мастерской")) {
                     VStack(alignment: .trailing, spacing: 2) {
-                        if steam.existingDirs.isEmpty { Text("не найдены").foregroundStyle(.secondary) }
+                        if steam.existingDirs.isEmpty { Text(tr("не найдены")).foregroundStyle(.secondary) }
                         ForEach(steam.existingDirs, id: \.self) { d in
                             Text(d.path).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
                         }
                     }
                 }
                 HStack {
-                    Button("Указать папку вручную…") {
+                    Button(tr("Указать папку вручную…")) {
                         if let u = Panels.chooseFolder() { app.settings.steamWorkshopPath = u.path; steam.scan() }
                     }
-                    Button("Сканировать") { steam.scan() }
+                    Button(tr("Сканировать")) { steam.scan() }
                     Spacer()
                     if steam.projects.contains(where: { $0.supported && !steam.isImported($0) }) {
-                        Button("Импортировать все поддерживаемые") { steam.importAllSupported() }
+                        Button(tr("Импортировать все поддерживаемые")) { steam.importAllSupported() }
                             .buttonStyle(CrimsonButtonStyle())
                     }
                 }
                 if !steam.status.isEmpty {
                     Text(steam.status).font(.callout)
                 }
-            } header: { Text("Wallpaper Engine из Steam") }
+            } header: { Text(tr("Wallpaper Engine из Steam")) }
 
             if !steam.projects.isEmpty {
                 Section {
-                    Toggle("Показывать неподдерживаемые", isOn: $showAll)
+                    Toggle(tr("Показывать неподдерживаемые"), isOn: $showAll)
                     ForEach(steam.projects.filter { showAll || $0.supported }) { p in
                         HStack(spacing: 12) {
                             preview(p)
@@ -59,34 +59,34 @@ struct WorkshopView: View {
                             }
                             Spacer()
                             if steam.isImported(p) {
-                                Label("В библиотеке", systemImage: "checkmark.circle.fill").foregroundStyle(.green).font(.caption)
+                                Label(tr("В библиотеке"), systemImage: "checkmark.circle.fill").foregroundStyle(.green).font(.caption)
                             } else if p.supported {
-                                Button("Импорт") { steam.importProject(p) }
+                                Button(tr("Импорт")) { steam.importProject(p) }
                             } else {
-                                Text("Не поддерживается").font(.caption).foregroundStyle(.secondary)
+                                Text(tr("Не поддерживается")).font(.caption).foregroundStyle(.secondary)
                             }
                         }
                     }
-                } header: { Text("Найдено в мастерской (\(steam.projects.count))") }
+                } header: { Text(tr("Найдено в мастерской (%@)", steam.projects.count)) }
             }
 
             Section {
-                TextField("Логин Steam", text: Binding(get: { app.settings.steamUser }, set: { app.settings.steamUser = $0 }))
-                TextField("Путь к steamcmd (необязательно)",
+                TextField(tr("Логин Steam"), text: Binding(get: { app.settings.steamUser }, set: { app.settings.steamUser = $0 }))
+                TextField(tr("Путь к steamcmd (необязательно)"),
                           text: Binding(get: { app.settings.steamcmdPath }, set: { app.settings.steamcmdPath = $0 }),
                           prompt: Text(steam.steamcmdPath() ?? "/opt/homebrew/bin/steamcmd"))
                 LabeledContent("steamcmd") {
                     if let p = steam.steamcmdPath() { Text(p).foregroundStyle(.green).font(.caption) }
-                    else { Text("не найден").foregroundStyle(.orange) }
+                    else { Text(tr("не найден")).foregroundStyle(.orange) }
                 }
                 HStack {
-                    TextField("ID или ссылка на предмет мастерской", text: $input)
+                    TextField(tr("ID или ссылка на предмет мастерской"), text: $input)
                         .onSubmit { steam.download(input) }
-                    Button(steam.busy ? "Загрузка…" : "Скачать") { steam.download(input) }
+                    Button(steam.busy ? tr("Загрузка…") : tr("Скачать")) { steam.download(input) }
                         .disabled(steam.busy || input.isEmpty)
                         .buttonStyle(CrimsonButtonStyle())
                 }
-                Button("Войти в steamcmd (откроется Терминал)") { steam.openLoginTerminal() }
+                Button(tr("Войти в steamcmd (откроется Терминал)")) { steam.openLoginTerminal() }
                     .disabled(steam.steamcmdPath() == nil || app.settings.steamUser.isEmpty)
                 if !steam.log.isEmpty {
                     ScrollView {
@@ -98,12 +98,12 @@ struct WorkshopView: View {
                     .frame(height: 160)
                 }
             } header: {
-                Text("Скачать через steamcmd")
+                Text(tr("Скачать через steamcmd"))
             } footer: {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("1. Установите steamcmd: `brew install --cask steamcmd` (или вручную с сайта Valve).")
-                    Text("2. Укажите логин и нажмите «Войти в steamcmd» — в Терминале введите пароль и код Steam Guard. LiveWall пароль не видит и не хранит.")
-                    Text("3. Вставьте ссылку вида steamcommunity.com/sharedfiles/filedetails/?id=… и нажмите «Скачать».")
+                    Text(tr("1. Установите steamcmd: `brew install --cask steamcmd` (или вручную с сайта Valve)."))
+                    Text(tr("2. Укажите логин и нажмите «Войти в steamcmd» — в Терминале введите пароль и код Steam Guard. LiveWall пароль не видит и не хранит."))
+                    Text(tr("3. Вставьте ссылку вида steamcommunity.com/sharedfiles/filedetails/?id=… и нажмите «Скачать»."))
                 }
                 .font(.caption)
             }

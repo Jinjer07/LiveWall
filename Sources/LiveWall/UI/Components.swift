@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct Thumbnail: View {
     let item: WallpaperItem
     var version: Int = 0
+    @State private var image: NSImage?
     var body: some View {
         Color.clear
             .aspectRatio(16 / 9, contentMode: .fit)
@@ -12,7 +13,7 @@ struct Thumbnail: View {
                 ZStack {
                     LinearGradient(colors: [Theme.panelHi, Theme.blood.opacity(0.55)],
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
-                    if let img = ThumbCache.image(for: item.previewURL) {
+                    if let img = image ?? ThumbCache.cached(item.previewURL) {
                         Image(nsImage: img).resizable().scaledToFill()
                     } else {
                         Image(systemName: item.type.symbol)
@@ -20,7 +21,9 @@ struct Thumbnail: View {
                             .foregroundStyle(Theme.scarlet.opacity(0.85))
                     }
                 }
-                .id(version)
+            }
+            .task(id: "\(item.previewURL?.path ?? "")#\(version)") {
+                image = await ThumbCache.load(item.previewURL)
             }
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
@@ -66,7 +69,7 @@ struct PropertyRow: View {
         let binding = Binding<Double>(
             get: { Swift.min(Swift.max(p.value.double, lo), hi) },
             set: { change(.number($0)) })
-        return SliderRow(title: prop.label, value: binding, range: lo...hi, step: prop.step, format: fmt)
+        return SliderRow(title: tr(prop.label), value: binding, range: lo...hi, step: prop.step, format: fmt)
     }
 
     var body: some View {
@@ -74,16 +77,16 @@ struct PropertyRow: View {
         case .slider:
             sliderRow
         case .color:
-            ColorPicker(prop.label, selection: Binding(get: { Color(rgbString: prop.value.string) },
+            ColorPicker(tr(prop.label), selection: Binding(get: { Color(rgbString: prop.value.string) },
                                                        set: { onChange(.string($0.rgbString)) }), supportsOpacity: false)
         case .bool:
-            Toggle(prop.label, isOn: Binding(get: { prop.value.bool }, set: { onChange(.bool($0)) }))
+            Toggle(tr(prop.label), isOn: Binding(get: { prop.value.bool }, set: { onChange(.bool($0)) }))
         case .combo:
-            Picker(prop.label, selection: Binding(get: { prop.value.string }, set: { onChange(.string($0)) })) {
-                ForEach(prop.options ?? [], id: \.value) { o in Text(o.label).tag(o.value) }
+            Picker(tr(prop.label), selection: Binding(get: { prop.value.string }, set: { onChange(.string($0)) })) {
+                ForEach(prop.options ?? [], id: \.value) { o in Text(tr(o.label)).tag(o.value) }
             }
         case .text:
-            TextField(prop.label, text: $text)
+            TextField(tr(prop.label), text: $text)
                 .onAppear { text = prop.value.string }
                 .onSubmit { onChange(.string(text)) }
         }

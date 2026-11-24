@@ -15,7 +15,10 @@ enum RuntimeFiles {
     static let bridge = #"""
 (function(){
   if (window.__lw) return;
-  var lw = window.__lw = { paused:false, fps:60, props:{}, audio:new Array(128).fill(0), mouse:{x:0.5,y:0.5}, volume:0 };
+  var lw = window.__lw = { paused:false, fps:60, props:{}, audio:new Array(128).fill(0), mouse:{x:0.5,y:0.5}, volume:0,
+    lang:'__LANG__', info:{}, ambient:{night:0, golden:0, precip:'none', intensity:0, cloud:0} };
+  window.__lwInfo = function(i){ lw.info = i || {}; lw.needFrame = 2; try{ window.dispatchEvent(new CustomEvent('lw-info', {detail:lw.info})); }catch(e){} };
+  window.__lwAmbient = function(a){ lw.ambient = a || lw.ambient; lw.needFrame = 2; try{ window.dispatchEvent(new CustomEvent('lw-ambient', {detail:lw.ambient})); }catch(e){} };
   function post(m){ try{ window.webkit.messageHandlers.lw.postMessage(m); }catch(e){} }
   window.__lwPost = post;
   window.addEventListener('error', function(e){
@@ -146,7 +149,7 @@ var abuf = new Uint8Array(64);
 function showErr(m){ errEl.textContent = m; errEl.style.display = m ? 'block' : 'none'; if (m) post({type:'error', message:m}); }
 function sh(type, src){ var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { var l = gl.getShaderInfoLog(s); gl.deleteShader(s); throw new Error(l); } return s; }
 var VS = '#version 300 es\nlayout(location=0) in vec2 p;\nvoid main(){ gl_Position = vec4(p, 0.0, 1.0); }';
-var HEAD = '#version 300 es\nprecision highp float;\nprecision highp int;\nuniform vec3 iResolution;\nuniform float iTime;\nuniform float iTimeDelta;\nuniform int iFrame;\nuniform vec4 iMouse;\nuniform vec4 iAudio;\nuniform vec4 iDate;\nuniform sampler2D iSpectrum;\n';
+var HEAD = '#version 300 es\nprecision highp float;\nprecision highp int;\nuniform vec3 iResolution;\nuniform float iTime;\nuniform float iTimeDelta;\nuniform int iFrame;\nuniform vec4 iMouse;\nuniform vec4 iAudio;\nuniform vec4 iDate;\nuniform sampler2D iSpectrum;\nuniform vec4 iAmbient;\n';
 window.__lwSetShader = function(src){
   try {
     var body = String(src).replace(/^\s*#version[^\n]*\n/, '');
@@ -196,6 +199,8 @@ function render(t){
   u('iAudio', function(l){ gl.uniform4f(l, sm[0], sm[1], sm[2], sm[3]); });
   u('iDate', function(l){ gl.uniform4f(l, d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds()); });
   u('iSpectrum', function(l){ gl.uniform1i(l, 0); });
+  var am = (window.__lw && __lw.ambient) || {};
+  u('iAmbient', function(l){ gl.uniform4f(l, am.night || 0, am.golden || 0, am.precip === 'snow' ? 2 : (am.precip === 'rain' ? 1 : 0), am.cloud || 0); });
   u('iChannel0', function(l){ gl.uniform1i(l, 0); });
   for (var k in U) {
     if (k.indexOf('u_') !== 0) continue;
@@ -360,12 +365,13 @@ function drawSprite(L, t, w, h, tint){
 }
 function pad(n){ return (n < 10 ? '0' : '') + n; }
 function textStr(s){
-  var d = new Date();
-  return String(s || '')
+  var d = new Date(), loc = (window.__lw && __lw.lang === 'en') ? 'en-US' : 'ru-RU', inf = (window.__lw && __lw.info) || {};
+  s = String(s || '').replace(/\{(cpu|ram|battery|charging|track|artist|event|eventTime|temp|weather|city)\}/g, function(m, k){ return inf[k] != null ? inf[k] : '—'; });
+  return s
     .replace(/\{time:s\}/g, pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()))
     .replace(/\{time\}/g, pad(d.getHours()) + ':' + pad(d.getMinutes()))
-    .replace(/\{date\}/g, d.toLocaleDateString('ru-RU', {day:'numeric', month:'long'}))
-    .replace(/\{weekday\}/g, d.toLocaleDateString('ru-RU', {weekday:'long'}))
+    .replace(/\{date\}/g, d.toLocaleDateString(loc, {day:'numeric', month:'long'}))
+    .replace(/\{weekday\}/g, d.toLocaleDateString(loc, {weekday:'long'}))
     .replace(/\{year\}/g, String(d.getFullYear()));
 }
 function textTex(L){
@@ -460,7 +466,34 @@ function render(t){
       else if (L.kind === 'particles') drawParticles(L, dt);
     } catch(e) { post({type:'error', message:'Слой «' + L.name + '»: ' + e.message}); }
   }
+  if (scene.ambient) drawAmbient(dt);
   lastXf = xf; drawOverlay(xf);
+}
+
+// Адаптация к времени суток и погоде: осадки + цветокоррекция всей сцены.
+var AMB_RAIN = {id:'__amb_rain', name:'rain', kind:'particles', pEmitter:'top', pCount:0, pSizeMin:10, pSizeMax:22, pSpeed:1100, pDirection:95, pSpread:2,
+  pLifetime:3, pGravity:0, pWobble:0, pColor:'#a9c7ff', pColor2:'#d8e6ff', pShape:'streak', opacity:0.55, parallax:0.3, blend:'normal', x:.5, y:.5};
+var AMB_SNOW = {id:'__amb_snow', name:'snow', kind:'particles', pEmitter:'top', pCount:0, pSizeMin:2, pSizeMax:7, pSpeed:45, pDirection:90, pSpread:15,
+  pLifetime:40, pGravity:0, pWobble:22, pColor:'#ffffff', pColor2:'#cfe3ff', pShape:'soft', opacity:0.9, parallax:0.4, blend:'normal', x:.5, y:.5};
+function drawAmbient(dt){
+  var a = (window.__lw && __lw.ambient) || {};
+  if (scene.ambientPrecip !== false && a.precip && a.precip !== 'none') {
+    var L = a.precip === 'snow' ? AMB_SNOW : AMB_RAIN;
+    L.pCount = Math.round((a.precip === 'snow' ? 320 : 520) * Math.max(0.2, a.intensity || 0.5));
+    drawParticles(L, dt);
+  }
+  var n = a.night || 0, g = a.golden || 0, c = a.cloud || 0;
+  var full = {cx: W / 2, cy: H / 2, sw: W, sh: H, rot: 0};
+  var base = {op: 1, hsb: [0, 1, 1], wave: [0, 0, 0, 0], blur: 0, feather: 0};
+  if (n > 0.01 || c > 0.05) {
+    var k = 1 - 0.12 * c;
+    base.tint = [k * (1 - 0.48 * n), k * (1 - 0.40 * n), k * (1 - 0.15 * n), 1];
+    blend('multiply'); quad(wtex, full, base);
+  }
+  if (g > 0.01) {
+    base.tint = [1.0, 0.45, 0.18, 1]; base.op = 0.16 * g;
+    blend('add'); quad(wtex, full, base);
+  }
 }
 
 // Редактор: выбор и перетаскивание слоёв

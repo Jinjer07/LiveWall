@@ -25,7 +25,7 @@ struct WallpaperDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
-                        Text("ДЕТАЛИ").font(.system(size: 11, weight: .bold)).tracking(3).foregroundStyle(Theme.scarlet)
+                        Text(tr("ДЕТАЛИ")).font(.system(size: 11, weight: .bold)).tracking(3).foregroundStyle(Theme.scarlet)
                         Spacer()
                         if let onClose {
                             Button(action: onClose) { Image(systemName: "xmark") }.buttonStyle(IconButtonStyle())
@@ -37,7 +37,7 @@ struct WallpaperDetailView: View {
                         .id(item.id)
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
 
-                    TextField("Название", text: $title)
+                    TextField(tr("Название"), text: $title)
                         .textFieldStyle(.plain)
                         .font(.system(size: 17, weight: .bold))
                         .foregroundStyle(Theme.text)
@@ -56,7 +56,7 @@ struct WallpaperDetailView: View {
                     }
                     .font(.callout).foregroundStyle(.secondary)
 
-                    TextField("Теги через запятую", text: $tags)
+                    TextField(tr("Теги через запятую"), text: $tags)
                         .textFieldStyle(.plain)
                         .padding(.horizontal, 12).padding(.vertical, 8)
                         .background(Capsule().fill(Theme.panel))
@@ -75,11 +75,11 @@ struct WallpaperDetailView: View {
 
                     if !item.properties.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("НАСТРОЙКИ ОБОЕВ").font(.system(size: 11, weight: .bold)).tracking(2).foregroundStyle(Theme.scarlet)
+                            Text(tr("НАСТРОЙКИ ОБОЕВ")).font(.system(size: 11, weight: .bold)).tracking(2).foregroundStyle(Theme.scarlet)
                             ForEach(item.properties.sorted { $0.order < $1.order }) { p in
                                 PropertyRow(prop: p) { v in setProperty(p.key, v) }
                             }
-                            Button("Сбросить настройки") { resetProperties(item) }
+                            Button(tr("Сбросить настройки")) { resetProperties(item) }
                                 .buttonStyle(GhostButtonStyle(compact: true))
                         }
                         .toggleStyle(CrimsonToggleStyle())
@@ -93,10 +93,10 @@ struct WallpaperDetailView: View {
             .onAppear { sync(item) }
             .onChange(of: itemID) { _, _ in if let i = self.item { sync(i) } }
             .sheet(isPresented: $showCode) { ShaderCodeEditor(itemID: item.id) }
-            .confirmationDialog("Удалить «\(item.title)»?", isPresented: $confirmDelete) {
-                Button("Удалить", role: .destructive) { app.remove(item) }
+            .confirmationDialog(tr("Удалить «%@»?", item.title), isPresented: $confirmDelete) {
+                Button(tr("Удалить"), role: .destructive) { app.remove(item) }
             } message: {
-                Text(library.isManaged(item) ? "Файлы обоев будут перемещены в Корзину." : "Обои будут убраны из библиотеки, исходные файлы останутся на месте.")
+                Text(library.isManaged(item) ? tr("Файлы обоев будут перемещены в Корзину.") : tr("Обои будут убраны из библиотеки, исходные файлы останутся на месте."))
             }
         }
     }
@@ -111,9 +111,9 @@ struct WallpaperDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
                 app.apply(item.id)
-                app.showToast("Применено: \(item.title)")
+                app.showToast(tr("Применено: %@", item.title))
             } label: {
-                Label(app.settings.spanMode ? "Растянуть на все экраны" : "Применить на все экраны", systemImage: "play.fill")
+                Label(app.settings.spanMode ? tr("Растянуть на все экраны") : tr("Применить на все экраны"), systemImage: "play.fill")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(CrimsonButtonStyle(large: true))
@@ -128,7 +128,7 @@ struct WallpaperDetailView: View {
                 }
             }
             if engine.inUse.contains(item.id) {
-                Button("Снять с рабочего стола") {
+                Button(tr("Снять с рабочего стола")) {
                     for s in engine.screens where engine.desiredItem(for: s.key) == item.id { app.apply(nil, screen: s.key) }
                     if app.settings.spanMode { app.apply(nil) }
                 }
@@ -141,25 +141,25 @@ struct WallpaperDetailView: View {
     private func actions(_ item: WallpaperItem) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             if item.type == .scene {
-                Button { app.openEditor(item) } label: { Label("Открыть в редакторе сцен", systemImage: "square.3.layers.3d") }
+                Button { app.openEditor(item) } label: { Label(tr("Открыть в редакторе сцен"), systemImage: "square.3.layers.3d") }
             }
             if item.type == .shader {
-                Button { showCode = true } label: { Label("Редактировать код шейдера", systemImage: "chevron.left.forwardslash.chevron.right") }
+                Button { showCode = true } label: { Label(tr("Редактировать код шейдера"), systemImage: "chevron.left.forwardslash.chevron.right") }
             }
             Button {
                 engine.snapshotActive(itemID: item.id) { img in
-                    if let img { library.savePreview(img, for: item.id); app.showToast("Превью обновлено") }
-                    else { app.showToast("Сначала примените обои — превью снимается с рабочего стола") }
+                    if let img { library.savePreview(img, for: item.id); app.showToast(tr("Превью обновлено")) }
+                    else { app.showToast(tr("Сначала примените обои — превью снимается с рабочего стола")) }
                 }
-            } label: { Label("Обновить превью с рабочего стола", systemImage: "camera") }
-            Button { engine.reload(itemID: item.id) } label: { Label("Перезапустить обои", systemImage: "arrow.clockwise") }
-            Button { NSWorkspace.shared.activateFileViewerSelecting([item.entryURL]) } label: { Label("Показать в Finder", systemImage: "folder") }
+            } label: { Label(tr("Обновить превью с рабочего стола"), systemImage: "camera") }
+            Button { engine.reload(itemID: item.id) } label: { Label(tr("Перезапустить обои"), systemImage: "arrow.clockwise") }
+            Button { NSWorkspace.shared.activateFileViewerSelecting([item.entryURL]) } label: { Label(tr("Показать в Finder"), systemImage: "folder") }
             Button {
                 guard let url = Panels.save(name: item.title + ".wallpkg", ext: "wallpkg") else { return }
-                do { try library.exportPackage(item, to: url); app.showToast("Экспортировано") }
-                catch { app.showToast("Ошибка: \(error.localizedDescription)") }
-            } label: { Label("Экспорт в .wallpkg", systemImage: "square.and.arrow.up") }
-            Button(role: .destructive) { confirmDelete = true } label: { Label("Удалить", systemImage: "trash").foregroundStyle(Theme.scarlet) }
+                do { try library.exportPackage(item, to: url); app.showToast(tr("Экспортировано")) }
+                catch { app.showToast(tr("Ошибка: %@", error.localizedDescription)) }
+            } label: { Label(tr("Экспорт в .wallpkg"), systemImage: "square.and.arrow.up") }
+            Button(role: .destructive) { confirmDelete = true } label: { Label(tr("Удалить"), systemImage: "trash").foregroundStyle(Theme.scarlet) }
         }
         .buttonStyle(ActionRowStyle())
     }
@@ -196,7 +196,7 @@ struct ShaderCodeEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Код шейдера").font(.headline)
+                Text(tr("Код шейдера")).font(.headline)
                 Spacer()
                 Text("mainImage(out vec4 fragColor, in vec2 fragCoord) · iTime · iResolution · iMouse · iAudio · iSpectrum")
                     .font(.caption).foregroundStyle(.secondary)
@@ -211,10 +211,10 @@ struct ShaderCodeEditor: View {
                     .frame(maxHeight: 90)
             }
             HStack {
-                Text("Изменения применяются к обоям на рабочем столе.").font(.caption).foregroundStyle(.secondary)
+                Text(tr("Изменения применяются к обоям на рабочем столе.")).font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Button("Закрыть") { dismiss() }
-                Button("Сохранить и применить") { save() }
+                Button(tr("Закрыть")) { dismiss() }
+                Button(tr("Сохранить и применить")) { save() }
                     .keyboardShortcut("s", modifiers: .command)
                     .buttonStyle(.borderedProminent)
             }

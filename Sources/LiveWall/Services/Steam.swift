@@ -32,9 +32,9 @@ enum WEProject {
     }
 
     static func makeItem(folder: URL) throws -> WallpaperItem {
-        guard let j = readJSON(folder), let info = info(folder: folder) else { throw LWError("нет project.json") }
+        guard let j = readJSON(folder), let info = info(folder: folder) else { throw LWError(tr("нет project.json")) }
         guard info.supported else {
-            throw LWError("тип «\(info.type)» не поддерживается (поддерживаются video и web; scene — закрытый формат)")
+            throw LWError(tr("тип «%@» не поддерживается (поддерживаются video и web; scene — закрытый формат)", info.type))
         }
         let t: WallpaperType = info.type == "video" ? .video : .web
         var props = t == .video ? DefaultProps.forType(.video) : []
@@ -50,10 +50,10 @@ enum WEProject {
     }
 
     static let knownLabels: [String: String] = [
-        "ui_browse_properties_scheme_color": "Цвет схемы",
-        "ui_browse_properties_alignment": "Выравнивание",
-        "ui_browse_properties_volume": "Громкость",
-        "ui_browse_properties_playback_rate": "Скорость",
+        "ui_browse_properties_scheme_color": tr("Цвет схемы"),
+        "ui_browse_properties_alignment": tr("Выравнивание"),
+        "ui_browse_properties_volume": tr("Громкость"),
+        "ui_browse_properties_playback_rate": tr("Скорость"),
     ]
 
     static func clean(_ s: String) -> String {
@@ -163,8 +163,8 @@ final class SteamService: ObservableObject {
         }
         projects = out.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
         status = existingDirs.isEmpty
-            ? "Папка мастерской Wallpaper Engine не найдена. Укажите её вручную или скачайте предмет через steamcmd."
-            : "Найдено проектов: \(out.count), поддерживается: \(out.filter(\.supported).count)"
+            ? tr("Папка мастерской Wallpaper Engine не найдена. Укажите её вручную или скачайте предмет через steamcmd.")
+            : tr("Найдено проектов: %@, поддерживается: %@", out.count, out.filter(\.supported).count)
     }
 
     func isImported(_ p: WEProjectInfo) -> Bool {
@@ -189,7 +189,7 @@ final class SteamService: ObservableObject {
     func importAllSupported() {
         var n = 0
         for p in projects where p.supported && !isImported(p) { if importProject(p) != nil { n += 1 } }
-        status = "Импортировано: \(n)"
+        status = tr("Импортировано: %@", n)
     }
 
     static func parseID(_ s: String) -> String? {
@@ -203,13 +203,13 @@ final class SteamService: ObservableObject {
 
     func download(_ input: String) {
         guard !busy else { return }
-        guard let id = Self.parseID(input) else { status = "Не удалось распознать ID предмета"; return }
-        guard let cmd = steamcmdPath() else { status = "steamcmd не найден. Установите его (см. инструкцию ниже) или укажите путь."; return }
+        guard let id = Self.parseID(input) else { status = tr("Не удалось распознать ID предмета"); return }
+        guard let cmd = steamcmdPath() else { status = tr("steamcmd не найден. Установите его (см. инструкцию ниже) или укажите путь."); return }
         let user = app?.settings.steamUser.trimmingCharacters(in: .whitespaces) ?? ""
-        guard !user.isEmpty else { status = "Укажите логин Steam"; return }
+        guard !user.isEmpty else { status = tr("Укажите логин Steam"); return }
 
         busy = true
-        status = "Загрузка предмета \(id)…"
+        status = tr("Загрузка предмета %@…", id)
         log += "\n> steamcmd +login \(user) +workshop_download_item \(Self.appID) \(id) +quit\n"
 
         let p = Process()
@@ -237,7 +237,7 @@ final class SteamService: ObservableObject {
         }
         do { try p.run() } catch {
             busy = false
-            status = "Не удалось запустить steamcmd: \(error.localizedDescription)"
+            status = tr("Не удалось запустить steamcmd: %@", error.localizedDescription)
         }
     }
 
@@ -259,22 +259,22 @@ final class SteamService: ObservableObject {
             folder = candidateDirs.map { $0.appendingPathComponent(id) }.first { FileManager.default.isDirectory($0) }
         }
         guard let folder, let info = WEProject.info(folder: folder) else {
-            status = "Не удалось скачать (код \(code)). Если steamcmd просит пароль — нажмите «Войти в steamcmd» и войдите один раз в Терминале."
+            status = tr("Не удалось скачать (код %@). Если steamcmd просит пароль — нажмите «Войти в steamcmd» и войдите один раз в Терминале.", code)
             return
         }
         scan()
         if !info.supported {
-            status = "Скачано «\(info.title)», но тип «\(info.type)» не поддерживается."
+            status = tr("Скачано «%@», но тип «%@» не поддерживается.", info.title, info.type)
         } else if importProject(info) != nil {
-            status = "Скачано и добавлено в библиотеку: «\(info.title)»"
+            status = tr("Скачано и добавлено в библиотеку: «%@»", info.title)
         } else if isImported(info) {
-            status = "«\(info.title)» уже в библиотеке"
+            status = tr("«%@» уже в библиотеке", info.title)
         }
     }
 
     /// Открывает Терминал, где пользователь сам вводит пароль и код Steam Guard (данные кешируются steamcmd).
     func openLoginTerminal() {
-        guard let cmd = steamcmdPath() else { status = "steamcmd не найден"; return }
+        guard let cmd = steamcmdPath() else { status = tr("steamcmd не найден"); return }
         let user = app?.settings.steamUser ?? ""
         let script = """
         #!/bin/bash
@@ -289,7 +289,7 @@ final class SteamService: ObservableObject {
             try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
             NSWorkspace.shared.open(url)
         } catch {
-            status = "Не удалось открыть Терминал: \(error.localizedDescription)"
+            status = tr("Не удалось открыть Терминал: %@", error.localizedDescription)
         }
     }
 }

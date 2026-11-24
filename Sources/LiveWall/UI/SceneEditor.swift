@@ -88,7 +88,7 @@ final class SceneEditorModel: ObservableObject {
             if !suppressPush { push() }
         }
     }
-    @Published var title = "Новая сцена"
+    @Published var title = tr("Новая сцена")
     @Published var selectedLayerID: String? {
         didSet { preview.js("__lwSelect(\(jsString(selectedLayerID)))") }
     }
@@ -137,7 +137,7 @@ final class SceneEditorModel: ObservableObject {
     func newScene() {
         itemID = nil
         folder = AppState.shared.library.newFolder()
-        title = "Новая сцена"
+        title = tr("Новая сцена")
         selectedLayerID = nil
         doc = Self.starterDoc()
         push()
@@ -178,7 +178,7 @@ final class SceneEditorModel: ObservableObject {
             n += 1; name = "\(base)-\(n).\(ext)"
         }
         do { try FileManager.default.copyItem(at: url, to: folder.appendingPathComponent(name)); return name }
-        catch { lastError = "Не удалось скопировать \(url.lastPathComponent): \(error.localizedDescription)"; return nil }
+        catch { lastError = tr("Не удалось скопировать %@: %@", url.lastPathComponent, error.localizedDescription); return nil }
     }
 
     private func pixelSize(_ url: URL) -> CGSize? {
@@ -213,13 +213,24 @@ final class SceneEditorModel: ObservableObject {
     }
 
     func addText() {
-        var l = SceneLayer(name: "Текст", kind: .text)
+        var l = SceneLayer(name: tr("Текст"), kind: .text)
         l.text = "{time}"; l.y = 0.45
         append(l)
     }
 
+    func addWidget(_ w: WidgetPreset) {
+        var l = SceneLayer(name: w.title, kind: .text)
+        l.text = w.text
+        l.fontSize = w.fontSize
+        l.fontWeight = w.weight
+        l.x = w.position.0; l.y = w.position.1
+        l.opacity = 0.9
+        l.parallax = 0.2
+        append(l)
+    }
+
     func addColor() {
-        var l = SceneLayer(name: "Заливка", kind: .color)
+        var l = SceneLayer(name: tr("Заливка"), kind: .color)
         l.width = doc.width; l.height = doc.height; l.tint = "#203060"
         append(l)
     }
@@ -240,7 +251,7 @@ final class SceneEditorModel: ObservableObject {
         guard let id, let i = doc.layers.firstIndex(where: { $0.id == id }) else { return }
         var l = doc.layers[i]
         l.id = UUID().uuidString
-        l.name += " (копия)"
+        l.name += tr(" (копия)")
         l.x = min(1, l.x + 0.02); l.y = min(1, l.y + 0.02)
         doc.layers.insert(l, at: i + 1)
         selectedLayerID = l.id
@@ -260,7 +271,7 @@ final class SceneEditorModel: ObservableObject {
         do {
             try JSONEncoder.lw.encode(doc).write(to: folder.appendingPathComponent("scene.json"))
         } catch {
-            lastError = "Ошибка сохранения: \(error.localizedDescription)"
+            lastError = tr("Ошибка сохранения: %@", error.localizedDescription)
             return
         }
         if let id = itemID, var item = lib.item(id) {
@@ -286,7 +297,7 @@ final class SceneEditorModel: ObservableObject {
         }
         app.engine.reload(itemID: id)
         if apply { app.apply(id) }
-        app.showToast(apply ? "Сцена сохранена и применена" : "Сцена сохранена")
+        app.showToast(apply ? tr("Сцена сохранена и применена") : tr("Сцена сохранена"))
     }
 }
 
@@ -297,14 +308,14 @@ struct SceneEditorView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PageHeader(title: "Редактор сцен", subtitle: model.itemID == nil ? "Новая сцена" : "Редактирование: \(model.title)") {
+            PageHeader(title: tr("Редактор сцен"), subtitle: model.itemID == nil ? tr("Новая сцена") : tr("Редактирование: %@", model.title)) {
                 HStack(spacing: 8) {
-                    Button { model.newScene() } label: { Label("Новая", systemImage: "doc.badge.plus") }
+                    Button { model.newScene() } label: { Label(tr("Новая"), systemImage: "doc.badge.plus") }
                         .buttonStyle(GhostButtonStyle())
-                    Button { model.save(apply: false) } label: { Label("Сохранить", systemImage: "square.and.arrow.down") }
+                    Button { model.save(apply: false) } label: { Label(tr("Сохранить"), systemImage: "square.and.arrow.down") }
                         .buttonStyle(GhostButtonStyle())
                         .keyboardShortcut("s", modifiers: .command)
-                    Button { model.save(apply: true) } label: { Label("Сохранить и применить", systemImage: "play.fill") }
+                    Button { model.save(apply: true) } label: { Label(tr("Сохранить и применить"), systemImage: "play.fill") }
                         .buttonStyle(CrimsonButtonStyle())
                 }
             }
@@ -318,13 +329,13 @@ struct SceneEditorView: View {
                 .frame(minWidth: 220, idealWidth: 250, maxWidth: 320)
             VStack(spacing: 8) {
                 HStack {
-                    TextField("Название сцены", text: $model.title)
+                    TextField(tr("Название сцены"), text: $model.title)
                         .textFieldStyle(.roundedBorder)
                         .frame(maxWidth: 300)
-                    Toggle("Параллакс в превью", isOn: $model.previewParallax)
+                    Toggle(tr("Параллакс в превью"), isOn: $model.previewParallax)
                     Spacer()
                     if model.dirty {
-                        HStack(spacing: 5) { LiveDot(); Text("Не сохранено") }
+                        HStack(spacing: 5) { LiveDot(); Text(tr("Не сохранено")) }
                             .font(.caption).foregroundStyle(Theme.scarlet)
                             .transition(.opacity.combined(with: .scale))
                     }
@@ -341,7 +352,7 @@ struct SceneEditorView: View {
                     Label(e, systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(.orange)
                         .lineLimit(2)
                 }
-                Text("Перетаскивайте слои мышью прямо в превью. Текстовые токены: {time} {time:s} {date} {weekday} {year}")
+                Text(tr("Перетаскивайте слои мышью прямо в превью. Текстовые токены: {time} {time:s} {date} {weekday} {year}"))
                     .font(.caption).foregroundStyle(.secondary)
             }
             .padding(12)
@@ -358,15 +369,18 @@ struct LayersPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Слои").font(.headline)
+                Text(tr("Слои")).font(.headline)
                 Spacer()
                 Menu {
-                    Button("Изображение…") { model.addImageLayer() }
-                    Menu("Частицы") {
+                    Button(tr("Изображение…")) { model.addImageLayer() }
+                    Menu(tr("Частицы")) {
                         ForEach(ParticlePreset.allCases) { p in Button(p.title) { model.addParticles(p) } }
                     }
-                    Button("Текст / часы") { model.addText() }
-                    Button("Цветная заливка") { model.addColor() }
+                    Button(tr("Текст / часы")) { model.addText() }
+                    Button(tr("Цветная заливка")) { model.addColor() }
+                    Menu(tr("Виджет")) {
+                        ForEach(WidgetPreset.allCases) { w in Button(w.title) { model.addWidget(w) } }
+                    }
                 } label: { Image(systemName: "plus") }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
@@ -376,7 +390,7 @@ struct LayersPanel: View {
                 ForEach(Array(model.doc.layers.reversed())) { layer in
                     HStack {
                         Image(systemName: layer.kind.symbol).frame(width: 18)
-                        Text(layer.name).lineLimit(1)
+                        Text(tr(layer.name)).lineLimit(1)
                             .foregroundStyle(layer.visible ? .primary : .secondary)
                         Spacer()
                         Button { model.toggleVisible(layer.id) } label: {
@@ -390,14 +404,14 @@ struct LayersPanel: View {
             Divider()
             HStack(spacing: 12) {
                 Button { model.move(model.selectedLayerID, up: true) } label: { Image(systemName: "arrow.up") }
-                    .help("Выше")
+                    .help(tr("Выше"))
                 Button { model.move(model.selectedLayerID, up: false) } label: { Image(systemName: "arrow.down") }
-                    .help("Ниже")
+                    .help(tr("Ниже"))
                 Button { model.duplicate(model.selectedLayerID) } label: { Image(systemName: "plus.square.on.square") }
-                    .help("Дублировать")
+                    .help(tr("Дублировать"))
                 Spacer()
                 Button { model.delete(model.selectedLayerID) } label: { Image(systemName: "trash") }
-                    .help("Удалить")
+                    .help(tr("Удалить"))
             }
             .buttonStyle(.borderless)
             .disabled(model.selectedLayerID == nil)
@@ -421,26 +435,34 @@ struct LayerInspector: View {
         var opts: [(String, Double)] = [("16:9", 1080), ("16:10", 1200), ("21:9", 823)]
         if let s = NSScreen.main, s.frame.width > 0 {
             let h = Double((1920 * s.frame.height / s.frame.width).rounded())
-            if !opts.contains(where: { $0.1 == h }) { opts.append(("Как у экрана", h)) }
+            if !opts.contains(where: { $0.1 == h }) { opts.append((tr("Как у экрана"), h)) }
         }
         let cur = model.doc.height
-        if !opts.contains(where: { $0.1 == cur }) { opts.append(("Своё", cur)) }
+        if !opts.contains(where: { $0.1 == cur }) { opts.append((tr("Своё"), cur)) }
         return opts
     }
 
     private var sceneForm: some View {
         Form {
-            Section("Сцена") {
-                LabeledContent("Размер макета") { Text("\(Int(model.doc.width)) × \(Int(model.doc.height))") }
-                Picker("Соотношение сторон", selection: Binding(get: { model.doc.height }, set: { model.doc.height = $0; model.doc.width = 1920 })) {
+            Section(tr("Сцена")) {
+                LabeledContent(tr("Размер макета")) { Text("\(Int(model.doc.width)) × \(Int(model.doc.height))") }
+                Picker(tr("Соотношение сторон"), selection: Binding(get: { model.doc.height }, set: { model.doc.height = $0; model.doc.width = 1920 })) {
                     ForEach(aspectOptions, id: \.1) { opt in
                         Text(opt.0).tag(opt.1)
                     }
                 }
-                ColorPicker("Фон", selection: $model.doc.background.hexColor, supportsOpacity: false)
+                ColorPicker(tr("Фон"), selection: $model.doc.background.hexColor, supportsOpacity: false)
+                Toggle(tr("Адаптация к времени суток и погоде"),
+                       isOn: Binding(get: { model.doc.ambient ?? false }, set: { model.doc.ambient = $0 }))
+                    .toggleStyle(CrimsonToggleStyle())
+                if model.doc.ambient == true {
+                    Toggle(tr("Осадки по текущей погоде"),
+                           isOn: Binding(get: { model.doc.ambientPrecip ?? true }, set: { model.doc.ambientPrecip = $0 }))
+                        .toggleStyle(CrimsonToggleStyle())
+                }
             }
             Section {
-                Text("Выберите слой слева или кликните по нему в превью. Добавить слой — кнопка «+».")
+                Text(tr("Выберите слой слева или кликните по нему в превью. Добавить слой — кнопка «+»."))
                     .font(.callout).foregroundStyle(.secondary)
             }
         }
@@ -453,26 +475,26 @@ struct LayerInspector: View {
     private func layerForm(_ l: Binding<SceneLayer>) -> some View {
         let kind = l.wrappedValue.kind
         Form {
-            Section("Слой: \(kind.title)") {
-                TextField("Название", text: l.name)
-                Toggle("Видимый", isOn: l.visible)
+            Section(tr("Слой: %@", kind.title)) {
+                TextField(tr("Название"), text: l.name)
+                Toggle(tr("Видимый"), isOn: l.visible)
                 SliderRow(title: "X", value: l.x, range: -0.5...1.5)
                 SliderRow(title: "Y", value: l.y, range: -0.5...1.5)
                 if kind != .particles {
-                    SliderRow(title: "Масштаб", value: l.scale, range: 0.02...5)
-                    SliderRow(title: "Поворот", value: l.rotation, range: -180...180, format: "%.0f°")
-                    SliderRow(title: "Вращение, °/с", value: l.rotationSpeed, range: -120...120, format: "%.0f")
+                    SliderRow(title: tr("Масштаб"), value: l.scale, range: 0.02...5)
+                    SliderRow(title: tr("Поворот"), value: l.rotation, range: -180...180, format: "%.0f°")
+                    SliderRow(title: tr("Вращение, °/с"), value: l.rotationSpeed, range: -120...120, format: "%.0f")
                 }
-                SliderRow(title: "Прозрачность", value: l.opacity, range: 0...1)
-                SliderRow(title: "Параллакс (глубина)", value: l.parallax, range: 0...2)
-                Picker("Наложение", selection: l.blend) {
-                    Text("Обычное").tag("normal")
-                    Text("Сложение (свет)").tag("add")
-                    Text("Экран").tag("screen")
-                    Text("Умножение").tag("multiply")
+                SliderRow(title: tr("Прозрачность"), value: l.opacity, range: 0...1)
+                SliderRow(title: tr("Параллакс (глубина)"), value: l.parallax, range: 0...2)
+                Picker(tr("Наложение"), selection: l.blend) {
+                    Text(tr("Обычное")).tag("normal")
+                    Text(tr("Сложение (свет)")).tag("add")
+                    Text(tr("Экран")).tag("screen")
+                    Text(tr("Умножение")).tag("multiply")
                 }
                 if kind != .particles {
-                    SliderRow(title: "Мягкие края",
+                    SliderRow(title: tr("Мягкие края"),
                               value: Binding(get: { l.wrappedValue.feather ?? 0 }, set: { l.wrappedValue.feather = $0 }),
                               range: 0...0.5)
                 }
@@ -480,56 +502,56 @@ struct LayerInspector: View {
 
             switch kind {
             case .image:
-                Section("Изображение") {
-                    LabeledContent("Файл") { Text(l.wrappedValue.file ?? "—").lineLimit(1).truncationMode(.middle) }
-                    Button("Заменить…") { model.replaceImage(for: l.wrappedValue.id) }
-                    ColorPicker("Оттенок (умножение)", selection: l.tint.hexColor, supportsOpacity: false)
+                Section(tr("Изображение")) {
+                    LabeledContent(tr("Файл")) { Text(l.wrappedValue.file ?? "—").lineLimit(1).truncationMode(.middle) }
+                    Button(tr("Заменить…")) { model.replaceImage(for: l.wrappedValue.id) }
+                    ColorPicker(tr("Оттенок (умножение)"), selection: l.tint.hexColor, supportsOpacity: false)
                 }
             case .color:
-                Section("Заливка") {
-                    ColorPicker("Цвет", selection: l.tint.hexColor, supportsOpacity: false)
-                    SliderRow(title: "Ширина", value: l.width, range: 10...4000, format: "%.0f")
-                    SliderRow(title: "Высота", value: l.height, range: 10...4000, format: "%.0f")
+                Section(tr("Заливка")) {
+                    ColorPicker(tr("Цвет"), selection: l.tint.hexColor, supportsOpacity: false)
+                    SliderRow(title: tr("Ширина"), value: l.width, range: 10...4000, format: "%.0f")
+                    SliderRow(title: tr("Высота"), value: l.height, range: 10...4000, format: "%.0f")
                 }
             case .text:
-                Section("Текст") {
-                    TextField("Текст", text: l.text, axis: .vertical).lineLimit(1...4)
-                    SliderRow(title: "Размер шрифта", value: l.fontSize, range: 10...600, format: "%.0f")
-                    Picker("Насыщенность", selection: l.fontWeight) {
-                        Text("Тонкий").tag("200"); Text("Лёгкий").tag("300"); Text("Обычный").tag("400")
-                        Text("Полужирный").tag("600"); Text("Жирный").tag("800")
+                Section(tr("Текст")) {
+                    TextField(tr("Текст"), text: l.text, axis: .vertical).lineLimit(1...4)
+                    SliderRow(title: tr("Размер шрифта"), value: l.fontSize, range: 10...600, format: "%.0f")
+                    Picker(tr("Насыщенность"), selection: l.fontWeight) {
+                        Text(tr("Тонкий")).tag("200"); Text(tr("Лёгкий")).tag("300"); Text(tr("Обычный")).tag("400")
+                        Text(tr("Полужирный")).tag("600"); Text(tr("Жирный")).tag("800")
                     }
-                    ColorPicker("Цвет", selection: l.textColor.hexColor, supportsOpacity: false)
+                    ColorPicker(tr("Цвет"), selection: l.textColor.hexColor, supportsOpacity: false)
                 }
             case .particles:
                 particlesSection(l)
             }
 
             if kind != .particles {
-                Section("Эффекты") {
-                    Toggle("Волны", isOn: l.waveEnabled)
+                Section(tr("Эффекты")) {
+                    Toggle(tr("Волны"), isOn: l.waveEnabled)
                     if l.wrappedValue.waveEnabled {
-                        SliderRow(title: "Амплитуда", value: l.waveAmplitude, range: 0...5)
-                        SliderRow(title: "Частота", value: l.waveFrequency, range: 0.1...20)
-                        SliderRow(title: "Скорость", value: l.waveSpeed, range: -10...10)
-                        Toggle("Вертикальные", isOn: l.waveVertical)
+                        SliderRow(title: tr("Амплитуда"), value: l.waveAmplitude, range: 0...5)
+                        SliderRow(title: tr("Частота"), value: l.waveFrequency, range: 0.1...20)
+                        SliderRow(title: tr("Скорость"), value: l.waveSpeed, range: -10...10)
+                        Toggle(tr("Вертикальные"), isOn: l.waveVertical)
                     }
-                    Toggle("Свечение", isOn: l.glowEnabled)
+                    Toggle(tr("Свечение"), isOn: l.glowEnabled)
                     if l.wrappedValue.glowEnabled {
-                        SliderRow(title: "Радиус", value: l.glowRadius, range: 0.5...20)
-                        SliderRow(title: "Интенсивность", value: l.glowIntensity, range: 0...3)
-                        ColorPicker("Цвет свечения", selection: l.glowColor.hexColor, supportsOpacity: false)
+                        SliderRow(title: tr("Радиус"), value: l.glowRadius, range: 0.5...20)
+                        SliderRow(title: tr("Интенсивность"), value: l.glowIntensity, range: 0...3)
+                        ColorPicker(tr("Цвет свечения"), selection: l.glowColor.hexColor, supportsOpacity: false)
                     }
                 }
-                Section("Цветокоррекция") {
-                    SliderRow(title: "Тон", value: l.hue, range: -180...180, format: "%.0f°")
-                    SliderRow(title: "Насыщенность", value: l.saturation, range: 0...3)
-                    SliderRow(title: "Яркость", value: l.brightness, range: 0...3)
+                Section(tr("Цветокоррекция")) {
+                    SliderRow(title: tr("Тон"), value: l.hue, range: -180...180, format: "%.0f°")
+                    SliderRow(title: tr("Насыщенность"), value: l.saturation, range: 0...3)
+                    SliderRow(title: tr("Яркость"), value: l.brightness, range: 0...3)
                 }
-                Section("Реакция на звук") {
-                    SliderRow(title: "Пульсация", value: l.audioPulse, range: 0...1)
-                    Picker("Полоса", selection: l.audioBand) {
-                        Text("Бас").tag("bass"); Text("Середина").tag("mid"); Text("Верха").tag("high"); Text("Общий уровень").tag("level")
+                Section(tr("Реакция на звук")) {
+                    SliderRow(title: tr("Пульсация"), value: l.audioPulse, range: 0...1)
+                    Picker(tr("Полоса"), selection: l.audioBand) {
+                        Text(tr("Бас")).tag("bass"); Text(tr("Середина")).tag("mid"); Text(tr("Верха")).tag("high"); Text(tr("Общий уровень")).tag("level")
                     }
                 }
             }
@@ -541,32 +563,32 @@ struct LayerInspector: View {
 
     @ViewBuilder
     private func particlesSection(_ l: Binding<SceneLayer>) -> some View {
-        Section("Частицы") {
-            Picker("Источник", selection: l.pEmitter) {
-                Text("Сверху").tag("top"); Text("Снизу").tag("bottom")
-                Text("По всему экрану").tag("full"); Text("Из точки X/Y").tag("point")
+        Section(tr("Частицы")) {
+            Picker(tr("Источник"), selection: l.pEmitter) {
+                Text(tr("Сверху")).tag("top"); Text(tr("Снизу")).tag("bottom")
+                Text(tr("По всему экрану")).tag("full"); Text(tr("Из точки X/Y")).tag("point")
             }
-            SliderRow(title: "Количество", value: Binding(get: { Double(l.wrappedValue.pCount) }, set: { l.wrappedValue.pCount = Int($0) }),
+            SliderRow(title: tr("Количество"), value: Binding(get: { Double(l.wrappedValue.pCount) }, set: { l.wrappedValue.pCount = Int($0) }),
                       range: 0...3000, step: 10, format: "%.0f")
-            SliderRow(title: "Размер от", value: l.pSizeMin, range: 0.5...80, format: "%.1f")
-            SliderRow(title: "Размер до", value: l.pSizeMax, range: 0.5...80, format: "%.1f")
-            SliderRow(title: "Скорость", value: l.pSpeed, range: 0...1500, format: "%.0f")
-            SliderRow(title: "Направление", value: l.pDirection, range: 0...360, format: "%.0f°")
-            SliderRow(title: "Разброс", value: l.pSpread, range: 0...180, format: "%.0f°")
-            SliderRow(title: "Время жизни, с", value: l.pLifetime, range: 0.5...60, format: "%.1f")
-            SliderRow(title: "Гравитация", value: l.pGravity, range: -500...500, format: "%.0f")
-            SliderRow(title: "Покачивание", value: l.pWobble, range: 0...100, format: "%.0f")
-            ColorPicker("Цвет 1", selection: l.pColor.hexColor, supportsOpacity: false)
-            ColorPicker("Цвет 2", selection: l.pColor2.hexColor, supportsOpacity: false)
-            Picker("Форма", selection: l.pShape) {
-                Text("Мягкая точка").tag("soft"); Text("Кольцо").tag("circle")
-                Text("Штрих (дождь)").tag("streak"); Text("Своя картинка").tag("image")
+            SliderRow(title: tr("Размер от"), value: l.pSizeMin, range: 0.5...80, format: "%.1f")
+            SliderRow(title: tr("Размер до"), value: l.pSizeMax, range: 0.5...80, format: "%.1f")
+            SliderRow(title: tr("Скорость"), value: l.pSpeed, range: 0...1500, format: "%.0f")
+            SliderRow(title: tr("Направление"), value: l.pDirection, range: 0...360, format: "%.0f°")
+            SliderRow(title: tr("Разброс"), value: l.pSpread, range: 0...180, format: "%.0f°")
+            SliderRow(title: tr("Время жизни, с"), value: l.pLifetime, range: 0.5...60, format: "%.1f")
+            SliderRow(title: tr("Гравитация"), value: l.pGravity, range: -500...500, format: "%.0f")
+            SliderRow(title: tr("Покачивание"), value: l.pWobble, range: 0...100, format: "%.0f")
+            ColorPicker(tr("Цвет 1"), selection: l.pColor.hexColor, supportsOpacity: false)
+            ColorPicker(tr("Цвет 2"), selection: l.pColor2.hexColor, supportsOpacity: false)
+            Picker(tr("Форма"), selection: l.pShape) {
+                Text(tr("Мягкая точка")).tag("soft"); Text(tr("Кольцо")).tag("circle")
+                Text(tr("Штрих (дождь)")).tag("streak"); Text(tr("Своя картинка")).tag("image")
             }
             if l.wrappedValue.pShape == "image" {
-                Button(l.wrappedValue.file == nil ? "Выбрать картинку…" : "Заменить картинку…") { model.replaceImage(for: l.wrappedValue.id) }
+                Button(l.wrappedValue.file == nil ? tr("Выбрать картинку…") : tr("Заменить картинку…")) { model.replaceImage(for: l.wrappedValue.id) }
             }
-            Toggle("Разлетаются от курсора", isOn: l.pMouseRepel)
-            SliderRow(title: "Реакция на бас", value: l.pAudio, range: 0...2)
+            Toggle(tr("Разлетаются от курсора"), isOn: l.pMouseRepel)
+            SliderRow(title: tr("Реакция на бас"), value: l.pAudio, range: 0...2)
         }
     }
 }

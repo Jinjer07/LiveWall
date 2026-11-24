@@ -35,7 +35,7 @@ final class AudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         self.handler = handler
         if stream != nil { return }
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
-        guard let display = content.displays.first else { throw LWError("Нет дисплея для захвата звука") }
+        guard let display = content.displays.first else { throw LWError(tr("Нет дисплея для захвата звука")) }
         let filter = SCContentFilter(display: display, excludingWindows: [])
         let cfg = SCStreamConfiguration()
         cfg.capturesAudio = true

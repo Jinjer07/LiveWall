@@ -6,6 +6,8 @@ struct SceneDoc: Codable, Equatable {
     var width: Double = 1920
     var height: Double = 1080
     var background: String = "#000000"
+    var ambient: Bool? = nil          // адаптация к времени суток и погоде
+    var ambientPrecip: Bool? = nil    // осадки по погоде
     var layers: [SceneLayer] = []
 }
 
@@ -14,10 +16,10 @@ struct SceneLayer: Codable, Identifiable, Equatable {
         case image, particles, text, color
         var title: String {
             switch self {
-            case .image: return "Изображение"
-            case .particles: return "Частицы"
-            case .text: return "Текст"
-            case .color: return "Заливка"
+            case .image: return tr("Изображение")
+            case .particles: return tr("Частицы")
+            case .text: return tr("Текст")
+            case .color: return tr("Заливка")
             }
         }
         var symbol: String {
@@ -103,12 +105,12 @@ enum ParticlePreset: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .snow: return "Снег"
-        case .rain: return "Дождь"
-        case .sparks: return "Искры"
-        case .dust: return "Пыль"
-        case .fireflies: return "Светлячки"
-        case .bubbles: return "Пузыри"
+        case .snow: return tr("Снег")
+        case .rain: return tr("Дождь")
+        case .sparks: return tr("Искры")
+        case .dust: return tr("Пыль")
+        case .fireflies: return tr("Светлячки")
+        case .bubbles: return tr("Пузыри")
         }
     }
 
@@ -139,5 +141,52 @@ enum ParticlePreset: String, CaseIterable, Identifiable {
             l.opacity = 0.35; l.pColor = "#bfe9ff"; l.pColor2 = "#ffffff"; l.pMouseRepel = true
         }
         return l
+    }
+}
+
+/// Готовые текстовые виджеты для сцен.
+enum WidgetPreset: String, CaseIterable, Identifiable {
+    case clock, date, system, battery, music, calendar, weather
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .clock: return tr("Часы")
+        case .date: return tr("Дата")
+        case .system: return tr("Системный монитор")
+        case .battery: return tr("Батарея")
+        case .music: return tr("Сейчас играет")
+        case .calendar: return tr("Ближайшее событие")
+        case .weather: return tr("Погода")
+        }
+    }
+    var text: String {
+        switch self {
+        case .clock: return "{time}"
+        case .date: return "{weekday}, {date}"
+        case .system: return "CPU {cpu}   RAM {ram}"
+        case .battery: return "{charging} {battery}"
+        case .music: return "♪ {track}\n{artist}"
+        case .calendar: return "{eventTime}  {event}"
+        case .weather: return "{temp}  {weather}\n{city}"
+        }
+    }
+    var fontSize: Double {
+        switch self {
+        case .clock: return 200
+        case .date: return 48
+        default: return 34
+        }
+    }
+    var weight: String { self == .clock ? "200" : "500" }
+    var position: (Double, Double) {
+        switch self {
+        case .clock: return (0.5, 0.42)
+        case .date: return (0.5, 0.56)
+        case .system: return (0.14, 0.92)
+        case .battery: return (0.92, 0.08)
+        case .music: return (0.86, 0.9)
+        case .calendar: return (0.14, 0.08)
+        case .weather: return (0.86, 0.1)
+        }
     }
 }

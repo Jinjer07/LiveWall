@@ -227,7 +227,7 @@ extension PageHeader where Trailing == EmptyView {
 
 struct SearchField: View {
     @Binding var text: String
-    var prompt = "Поиск"
+    var prompt = tr("Поиск")
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -253,6 +253,8 @@ struct SearchField: View {
 // MARK: - Пульсирующая точка «LIVE»
 
 struct LiveDot: View {
+    /// Пульсация — бесконечная анимация; включаем только там, где точка одна.
+    var animated = true
     @State private var pulse = false
     var body: some View {
         ZStack {
@@ -261,6 +263,7 @@ struct LiveDot: View {
             Circle().fill(Theme.scarlet).frame(width: 7, height: 7)
         }
         .onAppear {
+            guard animated else { return }
             withAnimation(.easeOut(duration: 1.3).repeatForever(autoreverses: false)) { pulse = true }
         }
     }
@@ -331,7 +334,7 @@ struct EmberField: View {
     @State private var embers: [Ember] = []
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 40.0)) { tl in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
             Canvas { ctx, size in
                 let t = tl.date.timeIntervalSinceReferenceDate * speed
                 let palette: [Color] = [Theme.crimson, Theme.scarlet, Theme.ember]

@@ -8,12 +8,12 @@ enum WallpaperType: String, Codable, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .video: return "Видео"
-        case .web: return "Веб"
-        case .image: return "Картинка"
-        case .slideshow: return "Слайдшоу"
-        case .shader: return "Шейдер"
-        case .scene: return "Сцена"
+        case .video: return tr("Видео")
+        case .web: return tr("Веб")
+        case .image: return tr("Картинка")
+        case .slideshow: return tr("Слайдшоу")
+        case .shader: return tr("Шейдер")
+        case .scene: return tr("Сцена")
         }
     }
 
@@ -151,6 +151,7 @@ struct WallpaperItem: Codable, Identifiable, Hashable {
     var favorite: Bool = false
     var source: WallpaperSource = .local
     var workshopID: String? = nil
+    var galleryID: String? = nil
     var properties: [WallpaperProperty] = []
     var added: Date = Date()
 
@@ -216,6 +217,15 @@ struct AppSettings: Codable, Equatable {
     var tosAccepted = false
     var onboardingDone = false
     var showSplash = true
+    var language = "system"          // system | ru | en
+    var ambientEnabled = true        // адаптация сцен к времени суток и погоде
+    var weatherCity = ""             // как ввёл пользователь
+    var weatherCityName = ""         // найденное название
+    var weatherLat: Double = 0
+    var weatherLon: Double = 0
+    var calendarWidgets = false
+    var nowPlayingWidgets = true
+    var autoCheckUpdates = true
 }
 
 struct PersistedState: Codable {
@@ -227,21 +237,23 @@ struct PersistedState: Codable {
 }
 
 enum SidebarItem: String, Hashable, CaseIterable {
-    case library, playlists, workshop, editor, settings
+    case library, gallery, playlists, workshop, editor, settings
 
     var title: String {
         switch self {
-        case .library: return "Библиотека"
-        case .playlists: return "Плейлисты"
-        case .workshop: return "Мастерская"
-        case .editor: return "Редактор сцен"
-        case .settings: return "Настройки"
+        case .library: return tr("Библиотека")
+        case .gallery: return tr("Галерея")
+        case .playlists: return tr("Плейлисты")
+        case .workshop: return tr("Мастерская")
+        case .editor: return tr("Редактор сцен")
+        case .settings: return tr("Настройки")
         }
     }
 
     var icon: String {
         switch self {
         case .library: return "square.grid.2x2.fill"
+        case .gallery: return "sparkles.rectangle.stack.fill"
         case .playlists: return "play.square.stack.fill"
         case .workshop: return "arrow.down.circle.fill"
         case .editor: return "square.3.layers.3d"
@@ -259,10 +271,10 @@ enum AppOverlay: String, Identifiable {
 
 enum DefaultProps {
     static func fill(order: Int = 0) -> WallpaperProperty {
-        WallpaperProperty(key: "fill", label: "Масштаб", kind: .combo, value: .string("fill"),
-                          options: [PropertyOption(label: "Заполнить", value: "fill"),
-                                    PropertyOption(label: "Вписать", value: "fit"),
-                                    PropertyOption(label: "Растянуть", value: "stretch")],
+        WallpaperProperty(key: "fill", label: tr("Масштаб"), kind: .combo, value: .string("fill"),
+                          options: [PropertyOption(label: tr("Заполнить"), value: "fill"),
+                                    PropertyOption(label: tr("Вписать"), value: "fit"),
+                                    PropertyOption(label: tr("Растянуть"), value: "stretch")],
                           order: order)
     }
 
@@ -274,21 +286,21 @@ enum DefaultProps {
     static func forType(_ t: WallpaperType) -> [WallpaperProperty] {
         switch t {
         case .video:
-            return [fill(order: 0), slider("rate", "Скорость воспроизведения", 1, 0.25, 2, order: 1)]
+            return [fill(order: 0), slider("rate", tr("Скорость воспроизведения"), 1, 0.25, 2, order: 1)]
         case .image:
             return [fill(order: 0)]
         case .slideshow:
             return [fill(order: 0),
-                    slider("interval", "Интервал (сек)", 30, 3, 600, step: 1, order: 1),
-                    slider("transition", "Длительность перехода (сек)", 1.5, 0, 5, order: 2),
-                    WallpaperProperty(key: "shuffle", label: "Случайный порядок", kind: .bool, value: .bool(false), order: 3)]
+                    slider("interval", tr("Интервал (сек)"), 30, 3, 600, step: 1, order: 1),
+                    slider("transition", tr("Длительность перехода (сек)"), 1.5, 0, 5, order: 2),
+                    WallpaperProperty(key: "shuffle", label: tr("Случайный порядок"), kind: .bool, value: .bool(false), order: 3)]
         case .shader:
-            return [slider("speed", "Скорость", 1, 0, 3, order: -2),
-                    slider("quality", "Качество (разрешение)", 1, 0.25, 2, order: -1)]
+            return [slider("speed", tr("Скорость"), 1, 0, 3, order: -2),
+                    slider("quality", tr("Качество (разрешение)"), 1, 0.25, 2, order: -1)]
         case .scene:
-            return [slider("parallax", "Сила параллакса", 1, 0, 3, order: 0),
-                    slider("speed", "Скорость анимации", 1, 0, 3, order: 1),
-                    slider("quality", "Качество (разрешение)", 1, 0.5, 2, order: 2)]
+            return [slider("parallax", tr("Сила параллакса"), 1, 0, 3, order: 0),
+                    slider("speed", tr("Скорость анимации"), 1, 0, 3, order: 1),
+                    slider("quality", tr("Качество (разрешение)"), 1, 0.5, 2, order: 2)]
         case .web:
             return []
         }

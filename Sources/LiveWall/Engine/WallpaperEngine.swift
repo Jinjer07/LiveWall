@@ -181,6 +181,8 @@ final class WallpaperEngine: ObservableObject {
         slot.window.orderFrontRegardless()
         r.setFPS(settings.fpsLimit)
         r.applyProperties(item.properties)
+        if let a = app?.ambient { r.setAmbient((settings.ambientEnabled ? a : AmbientState()).js) }
+        if let i = app?.sysInfo.info, !i.isEmpty { r.setInfo(Self.json(i)) }
         r.start()
         slot.renderer = r
 
@@ -241,7 +243,30 @@ final class WallpaperEngine: ObservableObject {
                 slot.renderer?.setPaused(p)
             }
         }
+        let active = anyActive
+        app?.sysInfo.setActive(active)
+        app?.mouse.setActive(active)
     }
+
+    // MARK: Живые данные (виджеты, время суток, погода)
+
+    static func json(_ d: [String: String]) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: d), let s = String(data: data, encoding: .utf8) else { return "{}" }
+        return s
+    }
+
+    func pushInfo(_ d: [String: String]) {
+        let j = Self.json(d)
+        for slot in slots.values where !slot.paused { slot.renderer?.setInfo(j) }
+    }
+
+    func pushAmbient(_ a: AmbientState) {
+        let j = (settings.ambientEnabled ? a : AmbientState()).js
+        for slot in slots.values { slot.renderer?.setAmbient(j) }
+    }
+
+    /// Есть ли сейчас хоть одни видимые (не на паузе) обои.
+    var anyActive: Bool { slots.values.contains { $0.renderer != nil && !$0.paused } }
 
     // MARK: Ввод
 
