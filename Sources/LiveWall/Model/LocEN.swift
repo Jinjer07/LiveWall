@@ -495,6 +495,10 @@ steamcmd не найден ||| steamcmd not found
 Фонари ||| Street lights
 Событие ||| Event
 Музыка ||| Music
+Например, Москва или Baku ||| E.g. London or Baku
+Введите название города ||| Enter a city name
+Пауза, когда активна другая программа ||| Pause when another app is focused
+Обои идут, только пока вы на рабочем столе (Finder) или в LiveWall ||| Wallpapers play only while you are on the desktop (Finder) or in LiveWall
 Работает (системный звук) ||| Running (system audio)
 macOS спросит разрешение «Только запись системного звука» (на macOS 14.2 и новее) — изображение экрана не захватывается, звук никуда не сохраняется. Спектр доступен веб-обоям (wallpaperRegisterAudioListener), шейдерам (iAudio, iSpectrum) и сценам. ||| macOS will ask for “System Audio Recording Only” (on macOS 14.2 and later) — the screen is never captured and audio is not saved anywhere. The spectrum is available to web wallpapers (wallpaperRegisterAudioListener), shaders (iAudio, iSpectrum) and scenes.
 Нет разрешения «Запись экрана и системного звука». Нажмите «Выдать доступ», включите LiveWall в списке и перезапустите приложение. ||| No “Screen & System Audio Recording” permission. Click “Grant access”, enable LiveWall in the list and relaunch the app.

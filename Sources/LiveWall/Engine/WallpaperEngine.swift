@@ -233,6 +233,7 @@ final class WallpaperEngine: ObservableObject {
         let global = userPaused
             || (s.pauseOnLock && (m.isLocked || m.isAsleep))
             || (s.pauseOnBattery && m.onBattery)
+            || (s.pauseWhenAppFocused && m.otherAppFocused)
         for (key, slot) in slots {
             let p = global
                 || (s.pauseOnFullscreen && m.fullscreenScreens.contains(key))
@@ -241,6 +242,10 @@ final class WallpaperEngine: ObservableObject {
             if p != slot.paused {
                 slot.paused = p
                 slot.renderer?.setPaused(p)
+                if ProcessInfo.processInfo.environment["LW_DEBUG"] != nil {
+                    NSLog("LW pause=%@ otherAppFocused=%@ front=%@", p ? "yes" : "no", m.otherAppFocused ? "yes" : "no",
+                          NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "-")
+                }
             }
         }
         let active = anyActive

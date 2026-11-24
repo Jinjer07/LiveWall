@@ -476,7 +476,7 @@ struct LayerInspector: View {
         let kind = l.wrappedValue.kind
         Form {
             Section(tr("Слой: %@", kind.title)) {
-                TextField(tr("Название"), text: l.name)
+                TextField(tr("Название"), text: l.name).textFieldStyle(.roundedBorder)
                 Toggle(tr("Видимый"), isOn: l.visible)
                 SliderRow(title: "X", value: l.x, range: -0.5...1.5)
                 SliderRow(title: "Y", value: l.y, range: -0.5...1.5)
@@ -515,7 +515,7 @@ struct LayerInspector: View {
                 }
             case .text:
                 Section(tr("Текст")) {
-                    TextField(tr("Текст"), text: l.text, axis: .vertical).lineLimit(1...4)
+                    TextField(tr("Текст"), text: l.text, axis: .vertical).lineLimit(1...4).textFieldStyle(.roundedBorder)
                     SliderRow(title: tr("Размер шрифта"), value: l.fontSize, range: 10...600, format: "%.0f")
                     Picker(tr("Насыщенность"), selection: l.fontWeight) {
                         Text(tr("Тонкий")).tag("200"); Text(tr("Лёгкий")).tag("300"); Text(tr("Обычный")).tag("400")

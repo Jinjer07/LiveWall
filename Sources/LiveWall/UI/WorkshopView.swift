@@ -85,15 +85,18 @@ struct WorkshopView: View {
 
             Section {
                 TextField(tr("Логин Steam"), text: Binding(get: { app.settings.steamUser }, set: { app.settings.steamUser = $0 }))
+                    .textFieldStyle(.roundedBorder)
                 TextField(tr("Путь к steamcmd (необязательно)"),
                           text: Binding(get: { app.settings.steamcmdPath }, set: { app.settings.steamcmdPath = $0 }),
                           prompt: Text(steam.steamcmdPath() ?? "/opt/homebrew/bin/steamcmd"))
+                    .textFieldStyle(.roundedBorder)
                 LabeledContent("steamcmd") {
                     if let p = steam.steamcmdPath() { Text(p).foregroundStyle(.green).font(.caption) }
                     else { Text(tr("не найден")).foregroundStyle(.orange) }
                 }
                 HStack {
                     TextField(tr("ID или ссылка на предмет мастерской"), text: $input)
+                    .textFieldStyle(.roundedBorder)
                         .onSubmit { steam.download(input) }
                     Button(steam.busy ? tr("Загрузка…") : tr("Скачать")) { steam.download(input) }
                         .disabled(steam.busy || input.isEmpty)

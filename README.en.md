@@ -38,7 +38,7 @@
 | 🧭 **Widgets** | CPU, memory, battery, now playing, next calendar event and weather, right on your wallpaper |
 | 🔊 **Audio reactive** | System audio spectrum (128 bands, vDSP FFT) for shaders, scenes and web wallpapers |
 | ⬆️ **Auto-updates** | A new GitHub release reaches every user: download, verify, relaunch |
-| 🔋 **Smart pause** | Full-screen apps, covered desktop, battery, lock and sleep; about 6% CPU at the default 15 fps |
+| 🔋 **Smart pause** | Full-screen apps, covered desktop, another app focused, battery, lock and sleep; about 6% CPU at the default 15 fps |
 | 🌍 **English and Russian** | Switch the interface language on the fly |
 
 ## Install

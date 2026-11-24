@@ -43,6 +43,14 @@ final class PerformanceMonitor {
     private(set) var onBattery = false
     private(set) var isLocked = false
     private(set) var isAsleep = false
+    /// Активна другая программа (не рабочий стол/Finder и не сам LiveWall).
+    private(set) var otherAppFocused = false
+
+    static func isOtherAppFrontmost() -> Bool {
+        guard let front = NSWorkspace.shared.frontmostApplication else { return false }
+        let desktopLike: Set<String> = ["com.apple.finder", Bundle.main.bundleIdentifier ?? "com.local.livewall"]
+        return !desktopLike.contains(front.bundleIdentifier ?? "")
+    }
 
     var onChange: (() -> Void)?
     var screensProvider: (() -> [WallpaperEngine.ScreenInfo])?
@@ -104,8 +112,10 @@ final class PerformanceMonitor {
            let type = IOPSGetProvidingPowerSourceType(snap)?.takeRetainedValue() as String? {
             battery = type == "Battery Power"
         }
+        let focused = Self.isOtherAppFrontmost()
         let changed = full != fullscreenScreens || maxed != maximizedScreens || battery != onBattery || covered != coveredScreens
-        fullscreenScreens = full; maximizedScreens = maxed; onBattery = battery; coveredScreens = covered
+            || focused != otherAppFocused
+        fullscreenScreens = full; maximizedScreens = maxed; onBattery = battery; coveredScreens = covered; otherAppFocused = focused
         if changed && notify { onChange?() }
         if changed && !notify { onChange?() }
     }

@@ -55,6 +55,8 @@ struct SettingsView: View {
                 Toggle(tr("Пауза, когда приложение открыто на весь экран"), isOn: b(\.pauseOnFullscreen))
                 Toggle(tr("Пауза, когда окно развёрнуто почти на весь экран"), isOn: b(\.pauseOnMaximized))
                 Toggle(tr("Пауза, когда рабочий стол закрыт окнами (экономия CPU)"), isOn: b(\.pauseWhenCovered))
+                Toggle(tr("Пауза, когда активна другая программа"), isOn: b(\.pauseWhenAppFocused))
+                    .help(tr("Обои идут, только пока вы на рабочем столе (Finder) или в LiveWall"))
                 Toggle(tr("Пауза при работе от батареи"), isOn: b(\.pauseOnBattery))
                 Toggle(tr("Пауза при блокировке экрана и сне дисплея"), isOn: b(\.pauseOnLock))
                 Toggle(tr("Пауза всех обоев"), isOn: $engine.userPaused)
@@ -96,10 +98,12 @@ struct SettingsView: View {
             Section {
                 Toggle(tr("Адаптировать сцены к времени суток и погоде"), isOn: b(\.ambientEnabled))
                 HStack {
-                    TextField(tr("Город для погоды"), text: b(\.weatherCity))
+                    TextField(tr("Город для погоды"), text: b(\.weatherCity), prompt: Text(tr("Например, Москва или Baku")))
+                        .textFieldStyle(.roundedBorder)
                         .onSubmit { app.ambientService.findCity(app.settings.weatherCity) }
                     Button(tr("Найти")) { app.ambientService.findCity(app.settings.weatherCity) }
                         .buttonStyle(CrimsonButtonStyle())
+                        .disabled(app.settings.weatherCity.trimmingCharacters(in: .whitespaces).isEmpty)
                     if !app.settings.weatherCityName.isEmpty {
                         Button(tr("Сбросить")) { app.ambientService.clearCity() }.buttonStyle(GhostButtonStyle(compact: true))
                     }

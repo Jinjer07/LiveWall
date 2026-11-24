@@ -201,6 +201,7 @@ struct AppSettings: Codable, Equatable {
     var pauseOnFullscreen = true
     var pauseOnMaximized = false
     var pauseWhenCovered = true
+    var pauseWhenAppFocused = false   // пауза, пока активна другая программа
     var pauseOnBattery = false
     var pauseOnLock = true
     var volume: Double = 0.5

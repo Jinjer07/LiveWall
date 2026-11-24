@@ -266,7 +266,8 @@ final class AmbientService: ObservableObject {
     /// Поиск города через геокодер Open-Meteo.
     func findCity(_ name: String) {
         let q = name.trimmingCharacters(in: .whitespaces)
-        guard !q.isEmpty, var comps = URLComponents(string: "https://geocoding-api.open-meteo.com/v1/search") else { return }
+        guard !q.isEmpty else { status = tr("Введите название города"); return }
+        guard var comps = URLComponents(string: "https://geocoding-api.open-meteo.com/v1/search") else { return }
         comps.queryItems = [URLQueryItem(name: "name", value: q), URLQueryItem(name: "count", value: "1"),
                             URLQueryItem(name: "language", value: Loc.isEnglish ? "en" : "ru")]
         guard let url = comps.url else { return }

@@ -74,7 +74,7 @@ struct PlaylistsView: View {
         let active = app.activePlaylistID == pl.wrappedValue.id
         Form {
             Section {
-                TextField(tr("Название"), text: pl.name)
+                TextField(tr("Название"), text: pl.name).textFieldStyle(.roundedBorder)
                 Picker(tr("Режим"), selection: pl.mode) {
                     Text(tr("По таймеру")).tag(PlaylistMode.timer)
                     Text(tr("По времени суток")).tag(PlaylistMode.timeOfDay)
