@@ -1,0 +1,233 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "snow-night",
+      "type": "scene",
+      "title": {
+        "ru": "Снежная ночь",
+        "en": "Snowy night"
+      },
+      "description": {
+        "ru": "Снег, луна, часы. Темнеет и светлеет вместе с вами.",
+        "en": "Snow, moon and a clock that follows the time of day."
+      },
+      "tags": [
+        "часы",
+        "зима"
+      ],
+      "file": "scenes/snow-night.json",
+      "preview": "previews/snow-night.jpg",
+      "version": 1
+    },
+    {
+      "id": "embers",
+      "type": "scene",
+      "title": {
+        "ru": "Угли",
+        "en": "Embers"
+      },
+      "description": {
+        "ru": "Алые искры поднимаются в такт басу.",
+        "en": "Crimson sparks rising to the bass."
+      },
+      "tags": [
+        "звук",
+        "часы"
+      ],
+      "file": "scenes/embers.json",
+      "preview": "previews/embers.jpg",
+      "version": 1
+    },
+    {
+      "id": "fireflies",
+      "type": "scene",
+      "title": {
+        "ru": "Светлячки",
+        "en": "Fireflies"
+      },
+      "description": {
+        "ru": "Ночной лес, светлячки разлетаются от курсора.",
+        "en": "A night forest; fireflies scatter from your cursor."
+      },
+      "tags": [
+        "мышь",
+        "природа"
+      ],
+      "file": "scenes/fireflies.json",
+      "preview": "previews/fireflies.jpg",
+      "version": 1
+    },
+    {
+      "id": "minimal",
+      "type": "scene",
+      "title": {
+        "ru": "Минимал",
+        "en": "Minimal"
+      },
+      "description": {
+        "ru": "Тонкие часы и пыль в луче света. Почти не нагружает систему.",
+        "en": "Thin clock and drifting dust. Very light on resources."
+      },
+      "tags": [
+        "часы",
+        "минимализм"
+      ],
+      "file": "scenes/minimal.json",
+      "preview": "previews/minimal.jpg",
+      "version": 1
+    },
+    {
+      "id": "rainy-evening",
+      "type": "scene",
+      "title": {
+        "ru": "Дождливый вечер",
+        "en": "Rainy evening"
+      },
+      "description": {
+        "ru": "Дождь по стеклу и тёплые фонари.",
+        "en": "Rain and warm street lights."
+      },
+      "tags": [
+        "часы",
+        "дождь"
+      ],
+      "file": "scenes/rainy-evening.json",
+      "preview": "previews/rainy-evening.jpg",
+      "version": 1
+    },
+    {
+      "id": "dashboard",
+      "type": "scene",
+      "title": {
+        "ru": "Дашборд",
+        "en": "Dashboard"
+      },
+      "description": {
+        "ru": "Часы, погода, календарь, музыка и нагрузка системы.",
+        "en": "Clock, weather, calendar, music and system load."
+      },
+      "tags": [
+        "виджеты",
+        "часы"
+      ],
+      "file": "scenes/dashboard.json",
+      "preview": "previews/dashboard.jpg",
+      "version": 1
+    },
+    {
+      "id": "aurora",
+      "type": "shader",
+      "title": {
+        "ru": "Аврора",
+        "en": "Aurora"
+      },
+      "description": {
+        "ru": "Полярное сияние со звёздами.",
+        "en": "Northern lights over a starry sky."
+      },
+      "tags": [
+        "шейдер",
+        "звук"
+      ],
+      "file": "shaders/aurora.frag",
+      "preview": "previews/aurora.jpg",
+      "version": 1
+    },
+    {
+      "id": "plasma",
+      "type": "shader",
+      "title": {
+        "ru": "Алая плазма",
+        "en": "Crimson plasma"
+      },
+      "description": {
+        "ru": "Классическая плазма в угольно-алых тонах.",
+        "en": "Classic plasma in charcoal and crimson."
+      },
+      "tags": [
+        "шейдер",
+        "абстракция"
+      ],
+      "file": "shaders/plasma.frag",
+      "preview": "previews/plasma.jpg",
+      "version": 1
+    },
+    {
+      "id": "starfield",
+      "type": "shader",
+      "title": {
+        "ru": "Звёздный тоннель",
+        "en": "Warp starfield"
+      },
+      "description": {
+        "ru": "Полёт сквозь звёзды, ускоряется от баса.",
+        "en": "Flight through stars that speeds up with the bass."
+      },
+      "tags": [
+        "шейдер",
+        "космос"
+      ],
+      "file": "shaders/starfield.frag",
+      "preview": "previews/starfield.jpg",
+      "version": 1
+    },
+    {
+      "id": "synthgrid",
+      "type": "shader",
+      "title": {
+        "ru": "Неоновая сетка",
+        "en": "Neon grid"
+      },
+      "description": {
+        "ru": "Ретро-горизонт с полосатым солнцем.",
+        "en": "Retro horizon with a striped sun."
+      },
+      "tags": [
+        "шейдер",
+        "ретро"
+      ],
+      "file": "shaders/synthgrid.frag",
+      "preview": "previews/synthgrid.jpg",
+      "version": 1
+    },
+    {
+      "id": "lava",
+      "type": "shader",
+      "title": {
+        "ru": "Лавовая лампа",
+        "en": "Lava lamp"
+      },
+      "description": {
+        "ru": "Плавные капли лавы.",
+        "en": "Slowly merging lava blobs."
+      },
+      "tags": [
+        "шейдер",
+        "абстракция"
+      ],
+      "file": "shaders/lava.frag",
+      "preview": "previews/lava.jpg",
+      "version": 1
+    },
+    {
+      "id": "ocean",
+      "type": "shader",
+      "title": {
+        "ru": "Океан на закате",
+        "en": "Ocean at dusk"
+      },
+      "description": {
+        "ru": "Волны, блики и солнце у горизонта.",
+        "en": "Waves, glints and the setting sun."
+      },
+      "tags": [
+        "шейдер",
+        "природа"
+      ],
+      "file": "shaders/ocean.frag",
+      "preview": "previews/ocean.jpg",
+      "version": 1
+    }
+  ]
+}
