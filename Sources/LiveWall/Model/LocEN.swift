@@ -567,5 +567,30 @@ steamcmd установлен ||| steamcmd installed
 Нет поддерживаемых обоев для импорта ||| No supported wallpapers to import
 Импортировано и добавлено в плейлист: %@ ||| Imported and added to playlist: %@
 Импортировать всё и создать плейлист ||| Import all and create a playlist
+Удалить выбранные обои (%@)? ||| Delete the selected wallpapers (%@)?
+Файлы обоев из библиотеки будут перемещены в Корзину. ||| Library wallpaper files will be moved to the Trash.
+Удалено: %@ ||| Deleted: %@
+Выбрано: %@ ||| Selected: %@
+Выбрать все ||| Select all
+Снять выбор ||| Clear selection
+Снег ||| Snow
+Снег на рабочем столе ||| Desktop snow
+Снежинки падают поверх рабочего стола и оседают на окнах ||| Snowflakes fall over your desktop and settle on windows
+Включить снег ||| Enable snow
+Внешний вид ||| Appearance
+Количество снега ||| Amount of snow
+Размер снежинок ||| Flake size
+Поведение ||| Behavior
+Оседает на верхних краях окон ||| Settles on top edges of windows
+Курсор отталкивает снег и сметает сугробы ||| Cursor pushes snow away and sweeps drifts
+Гирлянды под строкой меню ||| String lights under the menu bar
+Очистить сугробы ||| Clear drifts
+Паузы: обои и снег настраиваются отдельно ||| Pauses: wallpaper and snow are set separately
+Обои ||| Wallpaper
+При работе от батареи ||| On battery power
+Когда приложение открыто на весь экран ||| When an app is full screen
+При блокировке экрана и сне дисплея ||| On screen lock and display sleep
+Когда окно развёрнуто почти на весь экран ||| When a window is nearly full screen
+Снег поверх окон не перехватывает клики: рабочий стол и окна остаются доступными. ||| Snow does not intercept clicks: your desktop and windows stay usable.
 """#
 }

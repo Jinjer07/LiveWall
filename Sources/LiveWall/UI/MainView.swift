@@ -170,6 +170,7 @@ struct MainView: View {
         case .playlists: PlaylistsView()
         case .workshop: WorkshopView()
         case .editor: SceneEditorView(model: app.sceneEditor)
+        case .snow: SnowView()
         case .settings: SettingsView()
         }
     }
@@ -201,7 +202,7 @@ struct Sidebar: View {
                 .padding(.bottom, 18)
 
                 section(tr("ОБОИ"), [.library, .gallery, .playlists, .workshop])
-                section(tr("СОЗДАНИЕ"), [.editor])
+                section(tr("СОЗДАНИЕ"), [.editor, .snow])
                 section(tr("ПРИЛОЖЕНИЕ"), [.settings])
 
                 Spacer()

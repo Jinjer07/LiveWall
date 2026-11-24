@@ -18,6 +18,7 @@ final class AppState: ObservableObject {
     let gallery = GalleryService()
     let updater = UpdateService()
     let steamAccount = SteamAccount()
+    let snow = SnowController()
     var ambient: AmbientState { ambientService.state }
 
     @Published var settings: AppSettings {
@@ -39,6 +40,7 @@ final class AppState: ObservableObject {
     lazy var sceneEditor = SceneEditorModel()
 
     private var playlistIndex = 0
+    private var lastPlaylistID: String?
     private var lastSwitch = Date()
     private var playlistTimer: Timer?
     private var bootstrapped = false
@@ -59,8 +61,10 @@ final class AppState: ObservableObject {
         gallery.app = self
         updater.app = self
         steamAccount.app = self
+        snow.app = self
         Loc.lang = Loc.resolve(settings.language)
         playlistIndex = st.playlistIndex
+        lastPlaylistID = st.lastPlaylistID ?? st.activePlaylistID
         playlists = st.playlists
         activePlaylistID = st.activePlaylistID
         steam.app = self
@@ -81,9 +85,10 @@ final class AppState: ObservableObject {
             firstRun = true
         }
         monitor.screensProvider = { [weak self] in self?.engine.screens ?? [] }
-        monitor.onChange = { [weak self] in self?.engine.updatePauseStates() }
+        monitor.onChange = { [weak self] in self?.engine.updatePauseStates(); self?.snow.updatePause() }
         engine.setup()
         monitor.start()
+        snow.start()
         mouse.handler = { [weak self] kind, p in self?.engine.handleMouse(kind, at: p) }
         applyRuntimeSettings()
         updateAudioCapture()
@@ -95,7 +100,7 @@ final class AppState: ObservableObject {
         playlistTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.playlistTick() }
         }
-        if activePlaylistID != nil { playlistTick() }
+        startPlaylistOnLaunch()
         if CommandLine.arguments.contains("--import-workshop") { steam.importAllAsPlaylist() }
     }
 
@@ -103,12 +108,14 @@ final class AppState: ObservableObject {
         library.save()
         saveState()
         audio.stop()
+        snow.shutdown()
         engine.shutdown()
     }
 
     func saveState() {
         let st = PersistedState(assignments: engine.assignments, spanItemID: engine.spanItemID,
-                                activePlaylistID: activePlaylistID, playlists: playlists, playlistIndex: playlistIndex)
+                                activePlaylistID: activePlaylistID, playlists: playlists, playlistIndex: playlistIndex,
+                                lastPlaylistID: lastPlaylistID)
         Persistence.save(st, to: Paths.state)
     }
 
@@ -132,7 +139,16 @@ final class AppState: ObservableObject {
             ambientService.recompute()
         }
         if old.ambientEnabled != settings.ambientEnabled { engine.pushAmbient(ambientService.state) }
+        if snowSettingsDiffer(old) { snow.settingsChanged() }
         if old.nowPlayingWidgets != settings.nowPlayingWidgets || old.calendarWidgets != settings.calendarWidgets { sysInfo.refresh() }
+    }
+
+    private func snowSettingsDiffer(_ o: AppSettings) -> Bool {
+        let s = settings
+        return o.snowEnabled != s.snowEnabled || o.snowDensity != s.snowDensity || o.snowSize != s.snowSize
+            || o.snowOnWindows != s.snowOnWindows || o.snowCursor != s.snowCursor || o.snowGarlands != s.snowGarlands
+            || o.snowPauseOnBattery != s.snowPauseOnBattery || o.snowPauseOnFullscreen != s.snowPauseOnFullscreen
+            || o.snowPauseOnMaximized != s.snowPauseOnMaximized || o.snowPauseOnLock != s.snowPauseOnLock
     }
 
     @Published var audioNeedsPermission = false
@@ -213,8 +229,30 @@ final class AppState: ObservableObject {
 
     var activePlaylist: Playlist? { playlists.first { $0.id == activePlaylistID } }
 
+    /// При запуске сразу ставит обои из плейлиста, а не ждёт, пока истечёт интервал.
+    /// Берётся плейлист, активный при выходе; если обои не заданы вовсе — последний выбранный.
+    private func startPlaylistOnLaunch() {
+        if activePlaylist == nil, engine.assignments.isEmpty && engine.spanItemID == nil,
+           let last = lastPlaylistID, playlists.contains(where: { $0.id == last }) {
+            activePlaylistID = last
+        }
+        guard let pl = activePlaylist else { return }
+        switch pl.mode {
+        case .timer:
+            let valid = pl.items.filter { library.item($0) != nil }
+            guard !valid.isEmpty else { return }
+            playlistIndex = min(max(0, playlistIndex), valid.count - 1)   // продолжаем с того же места
+            if engine.primaryItemID != valid[playlistIndex] { engine.apply(valid[playlistIndex], screen: nil) }
+        case .timeOfDay:
+            if let w = pl.slotWallpaper(at: Date()), engine.primaryItemID != w { engine.apply(w, screen: nil) }
+        }
+        lastSwitch = Date()
+        saveState()
+    }
+
     func activatePlaylist(_ id: String?) {
         activePlaylistID = id
+        if let id { lastPlaylistID = id }
         playlistIndex = 0
         guard let pl = activePlaylist else { return }
         switch pl.mode {

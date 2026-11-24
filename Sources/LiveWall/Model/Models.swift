@@ -228,6 +228,18 @@ struct AppSettings: Codable, Equatable {
     var nowPlayingWidgets = true
     var autoCheckUpdates = true
     var hiddenWorkshopIDs: [String] = []   // удалённые из библиотеки предметы мастерской
+    // Снег поверх рабочего стола (вкладка «Снег»)
+    var snowEnabled = false
+    var snowDensity = 0.5
+    var snowSize = 1.0
+    var snowOnWindows = true            // оседает на верхних краях окон
+    var snowCursor = true               // курсор отталкивает и сметает снег
+    var snowGarlands = false
+    // Паузы снега — отдельно от пауз обоев
+    var snowPauseOnBattery = false
+    var snowPauseOnFullscreen = true
+    var snowPauseOnMaximized = false
+    var snowPauseOnLock = true
 }
 
 struct PersistedState: Codable {
@@ -236,10 +248,11 @@ struct PersistedState: Codable {
     var activePlaylistID: String? = nil
     var playlists: [Playlist] = []
     var playlistIndex: Int = 0
+    var lastPlaylistID: String? = nil   // последний выбранный плейлист: запускается при старте, если обои не заданы
 }
 
 enum SidebarItem: String, Hashable, CaseIterable {
-    case library, gallery, playlists, workshop, editor, settings
+    case library, gallery, playlists, workshop, editor, snow, settings
 
     var title: String {
         switch self {
@@ -248,6 +261,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .playlists: return tr("Плейлисты")
         case .workshop: return tr("Мастерская")
         case .editor: return tr("Редактор сцен")
+        case .snow: return tr("Снег")
         case .settings: return tr("Настройки")
         }
     }
@@ -259,6 +273,7 @@ enum SidebarItem: String, Hashable, CaseIterable {
         case .playlists: return "play.square.stack.fill"
         case .workshop: return "arrow.down.circle.fill"
         case .editor: return "square.3.layers.3d"
+        case .snow: return "snowflake"
         case .settings: return "gearshape.fill"
         }
     }
