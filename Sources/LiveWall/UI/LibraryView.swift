@@ -131,11 +131,12 @@ struct LibraryView: View {
             guard press.modifiers.contains(.command) else { return .ignored }
             selection = Set(items.map(\.id)); return .handled
         }
-        .background {
-            // Cmd+Backspace — удалить выбранные обои
-            Button("") { if !selection.isEmpty { confirmBulkDelete = true } }
-                .keyboardShortcut(.delete, modifiers: .command)
-                .opacity(0).frame(width: 0, height: 0).accessibilityHidden(true)
+        // Cmd+Backspace — удалить выбранные обои. Только когда фокус на сетке: в поле поиска
+        // это сочетание стирает текст до начала строки и не должно открывать удаление.
+        .onKeyPress(keys: [.delete, .deleteForward], phases: .down) { press in
+            guard press.modifiers.contains(.command), !selection.isEmpty else { return .ignored }
+            confirmBulkDelete = true
+            return .handled
         }
         .safeAreaInset(edge: .bottom) {
             if selection.count > 1 { selectionBar(items) }

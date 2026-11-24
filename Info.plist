@@ -2,22 +2,42 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleIdentifier</key><string>com.local.livewall</string>
-    <key>CFBundleName</key><string>LiveWall</string>
-    <key>CFBundleDisplayName</key><string>LiveWall</string>
-    <key>CFBundleExecutable</key><string>LiveWall</string>
-    <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.5.0</string>
-    <key>CFBundleVersion</key><string>10</string>
-    <key>CFBundleIconFile</key><string>AppIcon</string>
-    <key>LSMinimumSystemVersion</key><string>14.0</string>
-    <key>LSUIElement</key><true/>
-    <key>NSHighResolutionCapable</key><true/>
-    <key>NSSupportsAutomaticGraphicsSwitching</key><true/>
-    <key>CFBundleDevelopmentRegion</key><string>ru</string>
-    <key>CFBundleLocalizations</key><array><string>ru</string><string>en</string></array>
-    <key>NSAudioCaptureUsageDescription</key><string>LiveWall слушает системный звук, чтобы обои реагировали на музыку. Звук не записывается и никуда не отправляется. / LiveWall listens to system audio so wallpapers react to music. Nothing is recorded or sent anywhere.</string>
-    <key>NSCalendarsFullAccessUsageDescription</key><string>LiveWall показывает ближайшее событие календаря в виджетах на обоях. / LiveWall shows your next calendar event in wallpaper widgets.</string>
-    <key>NSCalendarsUsageDescription</key><string>LiveWall показывает ближайшее событие календаря в виджетах на обоях. / LiveWall shows your next calendar event in wallpaper widgets.</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>ru</string>
+	<key>CFBundleDisplayName</key>
+	<string>LiveWall</string>
+	<key>CFBundleExecutable</key>
+	<string>LiveWall</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.local.livewall</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ru</string>
+		<string>en</string>
+	</array>
+	<key>CFBundleName</key>
+	<string>LiveWall</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.6.0</string>
+	<key>CFBundleVersion</key>
+	<string>11</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>LiveWall слушает системный звук, чтобы обои реагировали на музыку. Звук не записывается и никуда не отправляется. / LiveWall listens to system audio so wallpapers react to music. Nothing is recorded or sent anywhere.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>LiveWall показывает ближайшее событие календаря в виджетах на обоях. / LiveWall shows your next calendar event in wallpaper widgets.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>LiveWall показывает ближайшее событие календаря в виджетах на обоях. / LiveWall shows your next calendar event in wallpaper widgets.</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
 </dict>
 </plist>

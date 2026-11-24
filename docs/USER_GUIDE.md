@@ -1,101 +1,116 @@
-# Руководство пользователя
+# User guide
 
-## Первый запуск
+## First launch
 
-1. **Заставка** — анимированный логотип (клик или любая клавиша — пропустить; отключается в настройках).
-2. **Условия использования** — прокрутите до конца, отметьте согласие и нажмите «Принять».
-3. **Онбординг** — 7 страниц о возможностях; на последней можно сразу включить автозапуск, реакцию на звук и параллакс.
+1. **Splash screen**: an animated logo (click or press any key to skip; can be turned off in Settings).
+2. **Terms of use**: scroll to the end, tick the checkbox and press “Accept”.
+3. **Onboarding**: 7 pages about the features. On the last one you can turn on launch at login, audio reactivity and parallax right away.
 
-Онбординг, условия и титры всегда доступны в **Настройки → LiveWall**.
+Onboarding, terms and credits are always available in **Settings → LiveWall**.
 
-## Меню-бар
+## Menu bar
 
-Иконка картины в строке меню:
+The picture icon in the menu bar gives you:
 
-- текущие обои, **Пауза / Продолжить**, «Следующие обои» (для плейлиста);
-- быстрый выбор плейлиста и избранного;
-- звук обоев и реакция на звук;
-- «Открыть LiveWall…» — главное окно.
+- the current wallpaper, **Pause / Resume**, “Next wallpaper” (for a playlist);
+- quick access to playlists and favorites;
+- wallpaper sound and audio reactivity;
+- “Open LiveWall…” for the main window.
 
-## Библиотека
+## Library
 
-- **Добавить**: перетащите файлы или папки в окно либо нажмите «Добавить».
-  - видео, картинки, GIF → копируются в библиотеку;
-  - папка с картинками → слайдшоу (ссылка на папку, можно докладывать файлы);
-  - папка с `index.html` → веб-обои; с `scene.json` → сцена; с `project.json` → проект Wallpaper Engine;
-  - `.frag` / `.glsl` → шейдер; `.wallpkg` → пакет LiveWall.
-- **Двойной клик** по карточке — применить на все экраны.
-- **Клик** — панель деталей: название, теги, избранное, применение на конкретный экран, настройки обоев, экспорт, удаление.
-- Фильтры по типу, избранному и тегам; поиск по названию и тегам.
+- **Add**: drag files or folders onto the window, or press “Add”.
+  - videos, images, GIFs are copied into the library;
+  - a folder of images becomes a slideshow (linked, so you can keep adding files);
+  - a folder with `index.html` becomes a web wallpaper; with `scene.json`, a scene; with `project.json`, a Wallpaper Engine project;
+  - `.frag` / `.glsl` becomes a shader; `.wallpkg` is a LiveWall package.
+- **Double-click** a card to apply it to all displays.
+- **Click** opens the details panel: name, tags, favorite, apply to a specific display, wallpaper settings, export, delete.
+- **Select several wallpapers**: Cmd-click adds or removes a card, Shift-click selects a range, Cmd+A selects everything shown, Esc clears the selection. The selection bar can favorite or delete them all. **Cmd+Backspace** deletes the selection after a confirmation; the files go to the Trash.
+- Filter by type, favorites and tags; search by name and tags.
 
-## Галерея
+## Gallery
 
-Раздел **Галерея** — готовые сцены и шейдеры. «Установить» скачивает элемент в библиотеку и сразу ставит его на рабочий стол, «+» только добавляет в библиотеку.
+**Gallery** has ready-made scenes and shaders. “Install” downloads an item into the library and puts it on the desktop right away; “+” only adds it to the library.
 
-## Время суток и погода
+## Snow
 
-**Настройки → Время суток и погода**: введите город и нажмите «Найти». Сцены с включённой адаптацией (в редакторе: сцена → «Адаптация к времени суток и погоде») темнеют ночью, теплеют на закате и показывают дождь или снег. Без города используется время 07:00–18:30.
+The **Snow** tab puts snow over your desktop and windows. It's off by default.
 
-## Виджеты
+- **Amount** and **flake size** sliders.
+- **Settles on the top edges of windows**: drifts move with the window and melt when it closes.
+- **The cursor pushes snow and sweeps drifts away.**
+- **String lights under the menu bar.**
+- **Clear drifts** removes all settled snow.
+- **Pause settings** for snow are separate from the wallpaper ones: battery, full-screen app, maximized window, lock and sleep. Snow also stops under Reduce Motion and uses half the flakes in Low Power Mode.
 
-В редакторе сцен: «+» → «Виджет» → часы, дата, системный монитор, батарея, сейчас играет, ближайшее событие, погода. Для календаря включите **Настройки → Виджеты → Ближайшее событие** и разрешите доступ.
+The snow layer never catches clicks: the desktop and windows underneath work as usual. It is drawn by the CPU, so it adds some load while it's on.
 
-## Обновления
+## Time of day and weather
 
-LiveWall сам проверяет новые версии на GitHub. Когда версия выходит, появляется баннер — нажмите «Обновить». Проверку можно отключить в **Настройки → Обновления**. После обновления разрешение на запись звука может понадобиться выдать заново.
+**Settings → Time of day and weather**: type a city and press “Find” (or Enter). Scenes with adaptation turned on (in the editor: scene → “Adapt to time of day and weather”) get darker at night, warmer at sunset and show rain or snow. Without a city, day is 07:00–18:30.
 
-## Язык
+## Widgets
 
-**Настройки → Язык**: «Как в системе», «Русский» или «English». Интерфейс переключается сразу.
+In the scene editor: “+” → “Widget” → clock, date, system monitor, battery, now playing, next event, weather. For the calendar, turn on **Settings → Widgets → Next event** and allow access.
 
-## Плейлисты
+## Updates
 
-- **По таймеру** — интервал от 1 минуты до суток, по порядку или случайно.
-- **По времени суток** — расписание вида «07:00 утро, 19:00 вечер, 23:00 ночь».
-- Ручной выбор обоев останавливает активный плейлист.
+LiveWall checks GitHub for new versions itself. When one is out, a banner appears; press “Update”. You can turn the check off in **Settings → Updates**.
 
-## Мастерская Steam
+## Language
 
-Нужен купленный Wallpaper Engine на вашем аккаунте.
+**Settings → Language**: “System”, “Русский” or “English”. The interface switches at once.
 
-1. **Мастерская → «Установить»** — если steamcmd ещё нет, LiveWall скачает официальную утилиту Valve.
-2. **«Войти в Steam»** — имя аккаунта и пароль, затем подтверждение в Steam Mobile (или код Steam Guard). Пароль уходит только в steamcmd и не сохраняется.
-3. **«Синхронизировать мастерскую»** — при первом запуске откроется окно steamcommunity.com: войдите по QR-коду. Дальше LiveWall сам находит подписки, скачивает новые, конвертирует сцены и добавляет всё в плейлист «Wallpaper Engine».
+## Playlists
 
-Видео и веб-обои переносятся как есть, сцены — через конвертер (оригинальные картинки, слои, параллакс, частицы). «Кукольная» анимация персонажей и собственные шейдеры WE не переносятся.
+- **Timer**: an interval from 1 minute to a day, in order or shuffled.
+- **Time of day**: a schedule like “07:00 morning, 19:00 evening, 23:00 night”.
+- The active playlist (or, if no wallpaper is set, the last chosen one) applies right away when LiveWall starts.
+- Picking a wallpaper by hand stops the active playlist.
 
-## Редактор сцен
+## Steam Workshop
 
-- **Слои** (снизу вверх): изображение, частицы, текст/часы, заливка.
-- Перетаскивайте слои мышью прямо в превью; порядок — стрелками в списке.
-- Для каждого слоя: позиция, масштаб, поворот и вращение, прозрачность, **параллакс** (глубина), режим наложения, мягкие края.
-- Эффекты: волны, свечение, цветокоррекция (тон, насыщенность, яркость), пульсация от звука.
-- Частицы: источник (сверху, снизу, по экрану, из точки), количество, размер, скорость, направление, разброс, гравитация, покачивание, цвета, форма (точка, кольцо, штрих, своя картинка), разлёт от курсора, реакция на бас.
-- Текст поддерживает токены: `{time}`, `{time:s}`, `{date}`, `{weekday}`, `{year}`.
-- «Сохранить и применить» (`⌘S` — сохранить).
+You need Wallpaper Engine purchased on your account.
 
-## Настройки
+1. **Workshop → “Install”**: if steamcmd isn't there yet, LiveWall downloads Valve's official tool.
+2. **“Sign in to Steam”**: username and password, then a Steam Mobile confirmation (or a Steam Guard code). The password goes only to steamcmd and is not stored.
+3. **“Sync Workshop”**: the first time, a steamcommunity.com window opens; sign in with the QR code. After that LiveWall finds your subscriptions, downloads new ones, converts scenes and adds everything to the “Wallpaper Engine” playlist.
 
-| Раздел | Что настраивается |
+Video and web wallpapers are imported as is, scenes through the converter (original images, layers, parallax, particles). WE puppet animation and custom WE shaders are not converted. If text in a scene imported before 1.6.0 looks huge, re-import it.
+
+## Scene editor
+
+- **Layers** (bottom to top): image, particles, text/clock, color fill.
+- Drag layers with the mouse right in the preview; reorder them with the arrows in the list.
+- Per layer: position, scale, rotation and spin, opacity, **parallax** (depth), blend mode, soft edges.
+- Effects: waves, glow, color grading (hue, saturation, brightness), audio pulse.
+- Particles: emitter (top, bottom, full screen, point), count, size, speed, direction, spread, gravity, wobble, colors, shape (dot, ring, streak, your own image), repel from cursor, bass reaction.
+- Text supports tokens: `{time}`, `{time:s}`, `{date}`, `{weekday}`, `{year}`.
+- “Save and apply” (`⌘S` saves).
+
+## Settings
+
+| Section | What it controls |
 |---|---|
-| Производительность | Лимит FPS, пауза при полноэкранном приложении, при закрытом окнами рабочем столе, при развёрнутом окне, от батареи, при блокировке |
-| Звук обоев | Громкость, без звука (звук только с основного монитора) |
-| Аудио-визуализация | Реакция на системный звук |
-| Интерактивность | Параллакс от мыши, клики по рабочему столу |
-| Мониторы | Растянуть одни обои на все мониторы |
-| Система | Автозапуск, папка данных, примеры |
+| Performance | FPS limit; pause for a full-screen app, covered desktop, maximized window, another app focused, battery, lock |
+| Wallpaper sound | Volume, mute (sound only from the main display) |
+| Audio visualization | Reaction to system audio |
+| Interactivity | Mouse parallax, desktop clicks |
+| Displays | Stretch one wallpaper across all displays |
+| System | Launch at login, data folder, samples |
 
-## Где хранятся данные
+## Where data is stored
 
 `~/Library/Application Support/LiveWall/`:
 
-- `library.json` — библиотека, `settings.json` — настройки, `state.json` — назначения и плейлисты;
-- `Library/` — файлы импортированных обоев, `Previews/` — превью внешних обоев, `Runtime/` — JS-рантаймы.
+- `library.json` is the library, `settings.json` the settings, `state.json` the assignments and playlists;
+- `Library/` holds imported wallpaper files, `Previews/` previews of linked wallpapers, `Runtime/` the JS runtimes.
 
-## Частые вопросы
+## FAQ
 
-**Тёмные полосы по краям, когда кликаю по рабочему столу.** Это края других окон, которые macOS отодвигает в режиме «Показать рабочий стол». Отключается в «Системные настройки → Рабочий стол и Dock → Нажатие на обои для отображения рабочего стола».
+**Dark bars at the screen edges when I click the desktop.** Those are the edges of other windows that macOS pushes aside in “Show Desktop” mode. Turn it off in System Settings → Desktop & Dock → “Click wallpaper to reveal desktop”.
 
-**Обои на паузе.** Проверьте настройки паузы: полноэкранное приложение, рабочий стол закрыт окнами, батарея.
+**The wallpaper is paused.** Check the pause settings: full-screen app, covered desktop, another app focused, battery.
 
-**Реакция на звук не работает.** Разрешите LiveWall в «Конфиденциальность и безопасность → Запись экрана и системного звука» и перезапустите приложение. После пересборки из исходников разрешение нужно выдать заново (меняется подпись).
+**Audio reactivity doesn't work.** Allow LiveWall in Privacy & Security → “Screen & System Audio Recording” (the “System Audio Recording Only” list on macOS 14.2+) and relaunch the app.

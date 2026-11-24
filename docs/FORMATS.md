@@ -1,8 +1,8 @@
-# Форматы обоев
+# Wallpaper formats
 
-## GLSL-шейдеры
+## GLSL shaders
 
-Шейдеры пишутся в стиле Shadertoy (GLSL ES 3.0 / WebGL 2):
+Shaders are written Shadertoy style (GLSL ES 3.0 / WebGL 2):
 
 ```glsl
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -11,34 +11,34 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 }
 ```
 
-### Встроенные uniform-переменные
+### Built-in uniforms
 
-| Имя | Тип | Значение |
+| Name | Type | Meaning |
 |---|---|---|
-| `iResolution` | `vec3` | Размер в пикселях |
-| `iTime`, `iTimeDelta` | `float` | Время и шаг кадра (с учётом «Скорости») |
-| `iFrame` | `int` | Номер кадра |
-| `iMouse` | `vec4` | Позиция курсора в пикселях (начало снизу слева) |
-| `iAudio` | `vec4` | x — бас, y — середина, z — верха, w — общий уровень (0…1) |
-| `iSpectrum` | `sampler2D` | Спектр 64×1 (`texture(iSpectrum, vec2(x, 0.5)).r`) |
-| `iDate` | `vec4` | Год, месяц, день, секунды с начала суток |
-| `iChannel0` | `sampler2D` | Псевдоним `iSpectrum` для кода из Shadertoy |
-| `iAmbient` | `vec4` | x — ночь (0…1), y — «золотой час», z — осадки (0 нет, 1 дождь, 2 снег), w — облачность |
+| `iResolution` | `vec3` | Size in pixels |
+| `iTime`, `iTimeDelta` | `float` | Time and frame step (scaled by “Speed”) |
+| `iFrame` | `int` | Frame number |
+| `iMouse` | `vec4` | Cursor position in pixels (origin at bottom left) |
+| `iAudio` | `vec4` | x: bass, y: mids, z: highs, w: overall level (0…1) |
+| `iSpectrum` | `sampler2D` | 64×1 spectrum (`texture(iSpectrum, vec2(x, 0.5)).r`) |
+| `iDate` | `vec4` | Year, month, day, seconds since midnight |
+| `iChannel0` | `sampler2D` | Alias of `iSpectrum` for Shadertoy code |
+| `iAmbient` | `vec4` | x: night (0…1), y: golden hour, z: precipitation (0 none, 1 rain, 2 snow), w: cloudiness |
 
-### Свои настройки
+### Custom settings
 
-Uniform-переменные с префиксом `u_` и комментарием появляются в панели настроек:
+Uniforms with a `u_` prefix and a comment show up in the settings panel:
 
 ```glsl
-uniform float u_speed;  // Скорость [0, 5] = 1
-uniform vec3  u_color;  // Цвет = 1 0.2 0.25
-uniform bool  u_glow;   // Свечение = true
-uniform int   u_count;  // Количество [1, 10] = 4
+uniform float u_speed;  // Speed [0, 5] = 1
+uniform vec3  u_color;  // Color = 1 0.2 0.25
+uniform bool  u_glow;   // Glow = true
+uniform int   u_count;  // Count [1, 10] = 4
 ```
 
-Формат: `// Подпись [мин, макс] = значение`. Цвет — три числа 0…1.
+Format: `// Label [min, max] = value`. A color is three numbers from 0 to 1.
 
-## Сцены (`scene.json`)
+## Scenes (`scene.json`)
 
 ```json
 {
@@ -47,69 +47,69 @@ uniform int   u_count;  // Количество [1, 10] = 4
   "height": 1080,
   "background": "#070b1c",
   "layers": [
-    { "id": "…", "name": "Часы", "kind": "text", "text": "{time}", "fontSize": 230, "x": 0.5, "y": 0.42 }
+    { "id": "…", "name": "Clock", "kind": "text", "text": "{time}", "fontSize": 230, "x": 0.5, "y": 0.42 }
   ]
 }
 ```
 
-Слои рисуются снизу вверх. `x`, `y` — центр слоя в долях макета (0…1). Макет масштабируется по принципу «заполнить экран».
+Layers are drawn bottom to top. `x`, `y` are the layer's center as fractions of the layout (0…1). The layout is scaled to fill the screen.
 
-| Поле | Слои | Описание |
+| Field | Layers | Description |
 |---|---|---|
-| `kind` | все | `image`, `particles`, `text`, `color` |
-| `x`, `y`, `scale`, `rotation`, `rotationSpeed` | все | Трансформация (градусы, градусы/с) |
-| `opacity`, `parallax`, `blend` | все | Прозрачность, глубина параллакса, `normal` / `add` / `screen` / `multiply` |
-| `feather` | кроме частиц | Мягкие края 0…0.5 |
-| `tint`, `hue`, `saturation`, `brightness` | кроме частиц | Оттенок и цветокоррекция |
-| `waveEnabled`, `waveAmplitude`, `waveFrequency`, `waveSpeed`, `waveVertical` | кроме частиц | Волны |
-| `glowEnabled`, `glowRadius`, `glowIntensity`, `glowColor` | кроме частиц | Свечение |
-| `audioPulse`, `audioBand` | кроме частиц | Пульсация от звука (`bass` / `mid` / `high` / `level`) |
-| `file` | image, частицы-картинки | Имя файла в папке сцены |
-| `text`, `fontSize`, `fontWeight`, `textColor` | text | Токены `{time}`, `{time:s}`, `{date}`, `{weekday}`, `{year}` |
-| `width`, `height` | color | Размер заливки в единицах макета |
-| `pCount`, `pEmitter`, `pSizeMin`, `pSizeMax`, `pSpeed`, `pDirection`, `pSpread`, `pLifetime`, `pGravity`, `pWobble`, `pColor`, `pColor2`, `pShape`, `pMouseRepel`, `pAudio` | particles | Источник `top` / `bottom` / `full` / `point`, форма `soft` / `circle` / `streak` / `image` |
+| `kind` | all | `image`, `particles`, `text`, `color` |
+| `x`, `y`, `scale`, `rotation`, `rotationSpeed` | all | Transform (degrees, degrees/s) |
+| `opacity`, `parallax`, `blend` | all | Opacity, parallax depth, `normal` / `add` / `screen` / `multiply` |
+| `feather` | all but particles | Soft edges 0…0.5 |
+| `tint`, `hue`, `saturation`, `brightness` | all but particles | Tint and color grading |
+| `waveEnabled`, `waveAmplitude`, `waveFrequency`, `waveSpeed`, `waveVertical` | all but particles | Waves |
+| `glowEnabled`, `glowRadius`, `glowIntensity`, `glowColor` | all but particles | Glow |
+| `audioPulse`, `audioBand` | all but particles | Audio pulse (`bass` / `mid` / `high` / `level`) |
+| `file` | image, image particles | File name in the scene folder |
+| `text`, `fontSize`, `fontWeight`, `textColor` | text | Tokens `{time}`, `{time:s}`, `{date}`, `{weekday}`, `{year}` |
+| `width`, `height` | color | Fill size in layout units |
+| `pCount`, `pEmitter`, `pSizeMin`, `pSizeMax`, `pSpeed`, `pDirection`, `pSpread`, `pLifetime`, `pGravity`, `pWobble`, `pColor`, `pColor2`, `pShape`, `pMouseRepel`, `pAudio` | particles | Emitter `top` / `bottom` / `full` / `point`, shape `soft` / `circle` / `streak` / `image` |
 
-Поля документа сцены: `ambient` (адаптация к времени суток и погоде) и `ambientPrecip` (осадки по погоде, по умолчанию включены).
+Scene document fields: `ambient` (adapt to time of day and weather) and `ambientPrecip` (precipitation from weather, on by default).
 
-Токены текстовых слоёв: `{time}` `{time:s}` `{date}` `{weekday}` `{year}`, а также виджеты: `{cpu}` `{ram}` `{battery}` `{charging}` `{track}` `{artist}` `{event}` `{eventTime}` `{temp}` `{weather}` `{city}`.
+Text layer tokens: `{time}` `{time:s}` `{date}` `{weekday}` `{year}`, plus widgets: `{cpu}` `{ram}` `{battery}` `{charging}` `{track}` `{artist}` `{event}` `{eventTime}` `{temp}` `{weather}` `{city}`.
 
-Свойства сцены в панели: `parallax`, `speed`, `quality` (разрешение рендера, 1 = без Retina-удвоения).
+Scene properties in the panel: `parallax`, `speed`, `quality` (render resolution; 1 means no Retina doubling).
 
-## Веб-обои
+## Web wallpapers
 
-Любая папка с `index.html`. Поддерживается API Wallpaper Engine:
+Any folder with `index.html`. The Wallpaper Engine API is supported:
 
 ```js
-// Настройки из панели (формат WE: { key: { value } }, цвета — "r g b" 0…1)
+// Settings from the panel (WE format: { key: { value } }, colors are "r g b" 0…1)
 window.wallpaperPropertyListener = {
   applyUserProperties(props) { /* … */ },
   applyGeneralProperties(general) { /* general.fps */ },
   setPaused(paused) { /* … */ }
 };
 
-// Спектр звука: массив из 128 чисел 0…1 (64 левый канал + 64 правый)
+// Audio spectrum: an array of 128 numbers 0…1 (64 left channel + 64 right)
 window.wallpaperRegisterAudioListener(audio => { /* … */ });
 ```
 
-Дополнительно:
+Also:
 
-- `requestAnimationFrame` автоматически ограничивается лимитом FPS и останавливается на паузе;
-- события мыши (`mousemove`, `mousedown`, `mouseup`, `click`, pointer-события) приходят, как в обычном браузере;
-- событие `lw-properties` (`CustomEvent`) дублирует `applyUserProperties`;
-- `<video>` и `<audio>` получают громкость из настроек LiveWall;
-- `window.__lw.info` и событие `lw-info` — данные виджетов (те же ключи, что у токенов);
-- `window.__lw.ambient` и событие `lw-ambient` — `{night, golden, precip, intensity, cloud}`;
-- `window.__lw.lang` — язык интерфейса (`ru` / `en`).
+- `requestAnimationFrame` is automatically limited to the FPS cap and stops while paused;
+- mouse events (`mousemove`, `mousedown`, `mouseup`, `click`, pointer events) arrive as in a normal browser;
+- the `lw-properties` event (`CustomEvent`) mirrors `applyUserProperties`;
+- `<video>` and `<audio>` get their volume from LiveWall's settings;
+- `window.__lw.info` and the `lw-info` event carry widget data (same keys as the tokens);
+- `window.__lw.ambient` and the `lw-ambient` event carry `{night, golden, precip, intensity, cloud}`;
+- `window.__lw.lang` is the interface language (`ru` / `en`).
 
-## Пакеты `.wallpkg`
+## `.wallpkg` packages
 
-ZIP-архив с содержимым папки обоев и файлом `manifest.json` (описание элемента библиотеки: тип, главный файл, теги, свойства). Создаётся через «Экспорт в .wallpkg», открывается перетаскиванием в библиотеку.
+A ZIP archive with the contents of the wallpaper folder and a `manifest.json` (the library item: type, main file, tags, properties). Created with “Export to .wallpkg”, opened by dragging it into the library.
 
-## Проекты Wallpaper Engine
+## Wallpaper Engine projects
 
-Из `project.json` читаются `type` (`video` / `web`), `file`, `title`, `preview`, `tags` и `general.properties` (типы `slider`, `color`, `bool`, `combo`, `textinput`). Проекты подключаются по ссылке и не копируются.
+From `project.json` LiveWall reads `type` (`video` / `web` / `scene`), `file`, `title`, `preview`, `tags` and `general.properties` (types `slider`, `color`, `bool`, `combo`, `textinput`). Video and web projects are linked, not copied. Scenes are converted: `scene.pkg` and `.tex` textures are unpacked and rebuilt as a LiveWall scene.
 
-## Галерея (`gallery/index.json`)
+## Gallery (`gallery/index.json`)
 
 ```json
 { "version": 1, "items": [
@@ -119,4 +119,4 @@ ZIP-архив с содержимым папки обоев и файлом `ma
 ]}
 ```
 
-Приложение читает каталог из `raw.githubusercontent.com/Jinjer07/LiveWall/main/gallery/`. Чтобы обновить превью у пользователей, поднимите `version` элемента.
+The app reads the catalog from `raw.githubusercontent.com/Jinjer07/LiveWall/main/gallery/`. To refresh previews for users, bump the item's `version`.

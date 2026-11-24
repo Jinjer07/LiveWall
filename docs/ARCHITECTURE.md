@@ -1,31 +1,34 @@
-# Архитектура
+# Architecture
 
 ```mermaid
 flowchart LR
     subgraph App["LiveWall.app (Swift)"]
-        UI["SwiftUI\nRootView · Sidebar · Library\nEditor · Settings · Onboarding"]
-        State["AppState\nнастройки · плейлисты"]
-        Lib["LibraryStore\nимпорт · превью · .wallpkg"]
-        Eng["WallpaperEngine\nокна рабочего стола"]
-        Mon["PerformanceMonitor\nпауза"]
+        UI["SwiftUI\nRootView · Sidebar · Library\nEditor · Snow · Settings · Onboarding"]
+        State["AppState\nsettings · playlists"]
+        Lib["LibraryStore\nimport · previews · .wallpkg"]
+        Eng["WallpaperEngine\ndesktop windows"]
+        Snow["SnowController\nclick-through overlays"]
+        Mon["PerformanceMonitor\npause"]
         Mouse["MouseTracker"]
-        Audio["AudioCapture\nScreenCaptureKit + vDSP"]
-        Steam["SteamService\nproject.json · steamcmd"]
+        Audio["AudioCapture\nCore Audio tap + vDSP"]
+        Steam["SteamService · SteamAccount\nproject.json · steamcmd · scene converter"]
     end
-    subgraph Render["Рендереры"]
+    subgraph Render["Renderers"]
         Video["VideoRenderer\nAVPlayerLooper"]
         Image["ImageRenderer\nCALayer"]
         Web["WebRenderer\nWKWebView"]
     end
-    subgraph JS["JS-рантаймы (WebGL 2)"]
-        Bridge["bridge.js\nAPI WE · FPS · пауза"]
+    subgraph JS["JS runtimes (WebGL 2)"]
+        Bridge["bridge.js\nWE API · FPS · pause"]
         Shader["shader.html"]
         Scene["scene.html"]
         Media["media.html"]
     end
     UI --> State --> Eng
     State --> Lib
+    State --> Snow
     Mon --> Eng
+    Mon --> Snow
     Mouse --> Eng
     Audio --> Eng
     Steam --> Lib
@@ -33,43 +36,47 @@ flowchart LR
     Web --> Bridge --> Shader & Scene & Media
 ```
 
-## Окно рабочего стола
+## Desktop window
 
-`DesktopWindow` — окно без рамки с уровнем `kCGDesktopWindowLevel`: выше системной картинки, ниже иконок Finder. Поведение `canJoinAllSpaces | stationary` держит его на всех рабочих столах, а `ignoresMouseEvents` пропускает клики к иконкам. На каждый экран создаётся своё окно. В режиме «растянуть» рендерер получает кадр объединения всех экранов и сдвигается внутри окна.
+`DesktopWindow` is a borderless window at `kCGDesktopWindowLevel`: above the system picture, below Finder's icons. The `canJoinAllSpaces | stationary` behavior keeps it on every Space, and `ignoresMouseEvents` lets clicks through to the icons. Each display gets its own window. In “stretch” mode the renderer gets the union of all displays and is offset inside each window.
 
-## Рендереры
+## Renderers
 
-| Тип | Рендерер | Как |
+| Type | Renderer | How |
 |---|---|---|
-| Видео mp4/mov/m4v | `VideoRenderer` | `AVQueuePlayer` + `AVPlayerLooper` (бесшовный цикл) |
-| Видео webm, GIF | `WebRenderer(.media)` | `<video>` / `<img>` в `media.html` |
-| Картинка, слайдшоу | `ImageRenderer` | `CALayer` + `CATransition` |
-| Веб | `WebRenderer(.web)` | Страница пользователя + мост |
-| Шейдер | `WebRenderer(.shader)` | `shader.html`: обёртка Shadertoy на WebGL 2 |
-| Сцена | `WebRenderer(.scene)` | `scene.html`: спрайты, частицы и текст на WebGL 2 |
+| Video mp4/mov/m4v | `VideoRenderer` | `AVQueuePlayer` + `AVPlayerLooper` (seamless loop) |
+| Video webm, GIF | `WebRenderer(.media)` | `<video>` / `<img>` in `media.html` |
+| Image, slideshow | `ImageRenderer` | `CALayer` + `CATransition` |
+| Web | `WebRenderer(.web)` | The user's page plus the bridge |
+| Shader | `WebRenderer(.shader)` | `shader.html`: a Shadertoy wrapper on WebGL 2 |
+| Scene | `WebRenderer(.scene)` | `scene.html`: sprites, particles and text on WebGL 2 |
 
-## Мост (bridge.js)
+## Bridge (bridge.js)
 
-Встраивается в каждую страницу на `documentStart`:
+Injected into every page at `documentStart`:
 
-- реализует `wallpaperPropertyListener`, `wallpaperRegisterAudioListener`, паузу и громкость медиа;
-- **заменяет `requestAnimationFrame` собственным планировщиком на таймерах**. Окно на уровне рабочего стола macOS считает перекрытым (поверх него лежит прозрачное окно иконок Finder), и WebKit перестаёт вызывать нативный rAF. Планировщик заодно ограничивает FPS, ускоряется до 30 FPS при движении мыши и рисует стоп-кадр на паузе;
-- синтезирует события мыши, потому что само окно их не получает.
+- implements `wallpaperPropertyListener`, `wallpaperRegisterAudioListener`, media pause and volume;
+- **replaces `requestAnimationFrame` with a timer-based scheduler**. macOS treats a desktop-level window as occluded (Finder's transparent icon window sits on top of it), so WebKit stops calling the native rAF. The scheduler also enforces the FPS limit, boosts to 30 FPS on mouse movement and draws a still frame while paused;
+- synthesizes mouse events, because the window itself doesn't receive any.
 
-## Производительность
+## Snow overlay
 
-Основная стоимость живых обоев — сам факт нового кадра: WKWebView передаёт дерево слоёв в процесс приложения, и WindowServer пересобирает весь экран. Поэтому оптимизации нацелены на то, чтобы кадров было меньше и они были дешевле:
+`SnowController` creates one `SnowOverlay` per display: a transparent, click-through window at the floating level. `SnowCanvas` simulates the flakes (depth layers, wind, cursor push) and draws them with Core Graphics through a `CADisplayLink` at up to 30 FPS. About ten times a second it reads window frames from `CGWindowList` (frames only, no permissions) to keep drifts on the top edges of windows. Snow has its own pause rules, independent of the wallpaper ones.
 
-1. Пауза, когда обоев не видно: полноэкранное приложение, рабочий стол закрыт окнами на ≥85 % (сетка 24×16 точек по `CGWindowList`), блокировка, сон, батарея.
-2. Лимит FPS (15 по умолчанию) с адаптивным ускорением при движении мыши.
-3. Рендер сцен в 1× (настройка «Качество»), без `preserveDrawingBuffer`, контекст `low-power`.
-4. Непрозрачный WKWebView — без смешивания с нижними слоями.
-5. Когда главное окно закрыто, свёрнуто или перекрыто, его интерфейс SwiftUI выгружается, и бесконечные анимации не будят процесс.
+## Performance
 
-## Звук
+The main cost of a live wallpaper is the fact of a new frame: WKWebView ships its layer tree to the app process and WindowServer recomposites the whole screen. So the optimizations aim for fewer and cheaper frames:
 
-`AudioCapture` запускает `SCStream` с `capturesAudio = true` (видео 2×2 пикселя, 1 кадр/с), собирает блоки по 1024 сэмпла и считает FFT через `vDSP_fft_zrip` с окном Ханна. Получаются 64 логарифмические полосы от 40 Гц до 16 кГц на канал со сглаживанием атаки и спада, до 30 раз в секунду.
+1. Pause when the wallpaper isn't visible: full-screen app, ≥85% of the desktop covered by windows (a 24×16 grid of points over `CGWindowList`), another app focused (optional), lock, sleep, battery.
+2. An FPS limit (15 by default) with an adaptive boost on mouse movement.
+3. Scenes render at 1× (the “Quality” setting), without `preserveDrawingBuffer`, with a `low-power` context.
+4. An opaque WKWebView, so nothing is blended with the layers below.
+5. When the main window is closed, minimized or covered, its SwiftUI interface is unloaded, so endless animations don't wake the process. The audio meter and LIVE dot run on Core Animation.
 
-## Сборка без Xcode
+## Audio
 
-`build.sh` вызывает `swiftc` напрямую со всеми исходниками (`-parse-as-library`), кладёт бинарник в `.app`, копирует `Info.plist` и `AppIcon.icns` и подписывает ad-hoc. `Package.swift` оставлен для Xcode и SwiftPM.
+On macOS 14.2+ `AudioCapture` creates a Core Audio process tap (`CATapDescription`) on an aggregate device, which needs only the “System Audio Recording Only” permission. On older systems it falls back to an `SCStream` with `capturesAudio = true` (2×2 pixel video, 1 frame/s). Samples are collected in blocks of 1024 and run through an FFT with `vDSP_fft_zrip` and a Hann window. The result is 64 logarithmic bands from 40 Hz to 16 kHz per channel, with attack and release smoothing, up to 30 times a second.
+
+## Building without Xcode
+
+`build.sh` calls `swiftc` directly with all the sources (`-parse-as-library`), puts the binary into the `.app`, copies `Info.plist` and `AppIcon.icns`, and signs it with the `LiveWall Code Signing` certificate (ad-hoc if it's missing). `Package.swift` is kept for Xcode and SwiftPM.

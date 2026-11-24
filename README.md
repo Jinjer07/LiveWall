@@ -4,16 +4,16 @@
 
 # LiveWall
 
-**Живые обои для macOS** — видео, веб-страницы, GLSL-шейдеры и интерактивные сцены прямо под иконками рабочего стола.
+**Live wallpapers for macOS**: videos, web pages, GLSL shaders and interactive scenes right beneath your desktop icons.
 
-[![macOS](https://img.shields.io/badge/macOS-14%2B-0B0B0D?style=for-the-badge&logo=apple&logoColor=white)](#требования)
-[![Swift](https://img.shields.io/badge/Swift-6.0-DC143C?style=for-the-badge&logo=swift&logoColor=white)](#сборка)
+[![macOS](https://img.shields.io/badge/macOS-14%2B-0B0B0D?style=for-the-badge&logo=apple&logoColor=white)](#requirements)
+[![Swift](https://img.shields.io/badge/Swift-6.0-DC143C?style=for-the-badge&logo=swift&logoColor=white)](#building)
 [![License](https://img.shields.io/badge/license-MIT-FF3340?style=for-the-badge)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/Jinjer07/LiveWall?style=for-the-badge&color=85081C)](https://github.com/Jinjer07/LiveWall/releases/latest)
 
-**Русский** · [English](README.en.md)
+**English** · [Русский](README.ru.md)
 
-[Возможности](#возможности) · [Установка](#установка) · [Сборка](#сборка) · [Документация](#документация) · [Производительность](#производительность)
+[Features](#features) · [Install](#install) · [Building](#building) · [Docs](#docs) · [Performance](#performance)
 
 </div>
 
@@ -21,48 +21,49 @@
 
 <table>
 <tr>
-<td width="33%"><img src="assets/screens/scene-night-clock.jpg" alt="Сцена «Ночные часы»"></td>
-<td width="33%"><img src="assets/screens/shader-waves.jpg" alt="GLSL-шейдер"></td>
-<td width="33%"><img src="assets/screens/web-visualizer.jpg" alt="Аудио-визуализатор"></td>
+<td width="33%"><img src="assets/screens/scene-night-clock.jpg" alt="Night clock scene"></td>
+<td width="33%"><img src="assets/screens/shader-waves.jpg" alt="GLSL shader"></td>
+<td width="33%"><img src="assets/screens/web-visualizer.jpg" alt="Audio visualizer"></td>
 </tr>
 <tr>
-<td align="center"><sub><b>Сцена</b> — часы, частицы, параллакс</sub></td>
-<td align="center"><sub><b>Шейдер</b> — в стиле Shadertoy</sub></td>
-<td align="center"><sub><b>Веб</b> — визуализатор звука</sub></td>
+<td align="center"><sub><b>Scene</b>: clock, particles, parallax</sub></td>
+<td align="center"><sub><b>Shader</b>: Shadertoy style</sub></td>
+<td align="center"><sub><b>Web</b>: audio visualizer</sub></td>
 </tr>
 </table>
 
-## Возможности
+## Features
 
 | | |
 |---|---|
-| 🎬 **6 типов обоев** | Видео (mp4/mov/webm), веб (HTML/JS/WebGL), картинки и GIF, слайдшоу, GLSL-шейдеры, сцены из слоёв |
-| 🧩 **Совместимость с Wallpaper Engine** | Импорт всей мастерской Steam: video и web как есть, сцены — через встроенный конвертер (оригинальные картинки, слои, параллакс, частицы), пресеты, плейлист в один клик |
-| 🎨 **Редактор сцен** | Слои, параллакс от мыши, частицы (снег, дождь, искры, светлячки…), волны, свечение, цветокоррекция, часы и дата |
-| 🔊 **Реакция на звук** | Спектр системного звука (128 полос, FFT на vDSP) для шейдеров, сцен и веб-обоев |
-| 🖥 **Несколько мониторов** | Свои обои на каждый экран или одни растянутые на все |
-| 📚 **Библиотека** | Теги, избранное, поиск, настройки каждых обоев, пакеты `.wallpkg` |
-| ⏱ **Плейлисты** | Смена по таймеру или по времени суток |
-| 🔋 **Умная пауза** | Полноэкранные приложения, закрытый окнами рабочий стол, активная другая программа, батарея, блокировка, сон |
-| 🖼 **Галерея** | Готовые сцены и шейдеры из репозитория — установка в один клик |
-| 🌦 **Время суток и погода** | Сцены темнеют ночью, теплеют на закате, показывают дождь и снег по реальной погоде |
-| 🧭 **Виджеты** | CPU, память, батарея, «Сейчас играет», ближайшее событие календаря, погода — прямо на обоях |
-| ⬆️ **Автообновления** | Новый релиз на GitHub сразу приходит всем пользователям: скачать → проверить → перезапустить |
-| 🌍 **Русский и English** | Язык интерфейса меняется на лету |
-| 🌑 **Дизайн** | Угольно-алая тема, заставка, онбординг, анимации интерфейса |
+| 🎬 **6 wallpaper types** | Video (mp4/mov/webm), web (HTML/JS/WebGL), images and GIFs, slideshows, GLSL shaders, layered scenes |
+| 🧩 **Wallpaper Engine compatible** | Import your whole Steam Workshop: video and web as is, scenes via the built-in converter (original images, layers, parallax, particles), presets, one-click playlist |
+| 🎨 **Scene editor** | Layers, mouse parallax, particles (snow, rain, sparks, fireflies…), waves, glow, color grading, clock and date |
+| 🔊 **Audio reactive** | System audio spectrum (128 bands, vDSP FFT) for shaders, scenes and web wallpapers |
+| 🖥 **Multiple displays** | A wallpaper per display, or one stretched across all of them |
+| 📚 **Library** | Tags, favorites, search, multi-select (Cmd/Shift-click, Cmd+A, Cmd+Backspace), per-wallpaper settings, `.wallpkg` packages |
+| ❄️ **Snow** | Snow over the desktop: drifts settle on windows, the cursor sweeps them away, string lights; separate pause settings |
+| ⏱ **Playlists** | Switch on a timer or by time of day; starts right away on launch |
+| 🔋 **Smart pause** | Full-screen apps, covered desktop, another app focused, battery, lock and sleep |
+| 🖼 **Gallery** | Ready-made scenes and shaders from this repository, one-click install |
+| 🌦 **Time of day & weather** | Scenes get darker at night, warmer at sunset and show rain or snow from real weather |
+| 🧭 **Widgets** | CPU, memory, battery, now playing, next calendar event and weather, right on your wallpaper |
+| ⬆️ **Auto-updates** | A new GitHub release reaches every user: download, verify, relaunch |
+| 🌍 **English and Russian** | Switch the interface language on the fly |
+| 🌑 **Design** | Charcoal and crimson theme, splash screen, onboarding, interface animations |
 
-## Установка
+## Install
 
-1. Скачайте `LiveWall-1.0.0-macOS-arm64.zip` со страницы [последнего релиза](https://github.com/Jinjer07/LiveWall/releases/latest).
-2. Распакуйте и перенесите `LiveWall.app` в «Программы».
-3. Приложение не заверено Apple (нет платного сертификата разработчика), поэтому macOS один раз спросит, можно ли его открыть:
-   - **macOS 14 Sonoma:** правый клик по LiveWall → «Открыть» → «Открыть».
-   - **macOS 15 и новее (включая 26–27):** запустите LiveWall, закройте предупреждение, затем «Системные настройки → Конфиденциальность и безопасность» → внизу «Всё равно открыть» → подтвердите паролем или Touch ID.
-4. Пройдите короткий онбординг — и обои уже на рабочем столе.
+1. Download the zip from the [latest release](https://github.com/Jinjer07/LiveWall/releases/latest).
+2. Unzip it and move `LiveWall.app` to Applications.
+3. The app isn't notarized by Apple (no paid developer certificate), so macOS asks once before opening it:
+   - **macOS 14 Sonoma:** right-click LiveWall → Open → Open.
+   - **macOS 15 and later (incl. 26–27):** launch LiveWall, dismiss the warning, then System Settings → Privacy & Security → “Open Anyway” at the bottom, and confirm with your password or Touch ID.
+4. Go through the short onboarding, and the wallpaper is already on your desktop.
 
-> Для реакции на звук macOS попросит разрешение «Запись экрана и системного звука». Изображение экрана не записывается — используется только звук.
+> For audio reactivity macOS asks for the “System Audio Recording Only” permission (macOS 14.2+). The screen is not recorded.
 
-## Галерея
+## Gallery
 
 <table>
 <tr>
@@ -73,22 +74,22 @@
 </tr>
 </table>
 
-Каталог лежит в [`gallery/`](gallery): чтобы добавить сцену или шейдер, положите файл и превью и допишите элемент в `index.json` (сцены удобно генерировать скриптом `tools/build_gallery.py`).
+The catalog lives in [`gallery/`](gallery). To add a scene or shader, add the file and a preview and append an item to `index.json` (scenes are easy to generate with `tools/build_gallery.py`).
 
-## Обновления
+## Updates
 
-LiveWall сам проверяет [последний релиз](https://github.com/Jinjer07/LiveWall/releases/latest) при запуске и раз в 6 часов. Когда выходит новая версия, появляется баннер «Доступна версия X» и кнопка «Обновить». Архив скачивается, сверяется с SHA-256 из описания релиза, приложение подменяется и перезапускается.
+LiveWall checks the [latest release](https://github.com/Jinjer07/LiveWall/releases/latest) on launch and every 6 hours. When a new version is out, a “Version X is available” banner with an “Update” button appears. The zip is downloaded, checked against the SHA-256 in the release notes, swapped in, and the app relaunches.
 
-Как выпустить обновление: поднимите `CFBundleShortVersionString` в `Info.plist`, соберите `./build.sh`, создайте релиз с тегом `vX.Y.Z` и приложите `LiveWall-X.Y.Z-macOS-arm64.zip`, указав в описании строку `SHA-256: <хэш>`.
+To ship an update: bump `CFBundleShortVersionString` in `Info.plist`, build with `./build.sh`, create a release tagged `vX.Y.Z`, attach the zipped `LiveWall.app`, and put a `SHA-256: <hash>` line in the release notes.
 
-## Требования
+## Requirements
 
-- macOS 14 Sonoma или новее (проверено на 14.6 и 27.2)
-- Apple Silicon (сборка релиза — arm64)
+- macOS 14 Sonoma or later (tested on 14.6 and 27.2)
+- Apple Silicon (the release build is arm64)
 
-## Сборка
+## Building
 
-Нужны только Command Line Tools (`xcode-select --install`), Xcode не обязателен.
+Only Command Line Tools are needed (`xcode-select --install`); Xcode is optional.
 
 ```bash
 git clone https://github.com/Jinjer07/LiveWall.git
@@ -97,32 +98,36 @@ cd LiveWall
 open build/LiveWall.app
 ```
 
-`build.sh` компилирует исходники напрямую через `swiftc`, собирает `.app` и подписывает его сертификатом `LiveWall Code Signing` (если он есть в связке ключей; иначе ad-hoc). Постоянная подпись нужна, чтобы macOS не сбрасывала выданные разрешения после пересборки. Свой сертификат можно указать через `LIVEWALL_SIGN_IDENTITY`. Иконка генерируется скриптом `tools/make_icon.swift`.
+`build.sh` compiles the sources directly with `swiftc`, assembles the `.app` and signs it with the `LiveWall Code Signing` certificate if it is in your keychain (ad-hoc otherwise). A stable signature keeps macOS from resetting granted permissions after every rebuild. Use `LIVEWALL_SIGN_IDENTITY` to pick your own certificate. The icon is generated by `tools/make_icon.swift`.
 
-## Производительность
+## Performance
 
-Живые обои по природе тратят ресурсы: каждый кадр заставляет WindowServer пересобрать экран. LiveWall делает всё, чтобы кадров было как можно меньше:
+Live wallpapers cost resources by nature: every frame makes WindowServer recomposite the screen. LiveWall does everything it can to draw as few frames as possible:
 
-| Режим | Нагрузка (MacBook M3, сцена «Ночные часы») |
+| Mode | Load (MacBook M3, “Night clock” scene) |
 |---|---|
-| Пауза (рабочий стол закрыт окнами, полноэкранное приложение, батарея) | **≈ 0 %** |
-| 15 FPS (по умолчанию) | **≈ 6 %** суммарно |
-| 24 FPS | ≈ 14–20 % |
-| До оптимизации (30 FPS) | ≈ 42 % |
+| Paused (desktop covered, full-screen app, battery) | **≈ 0%** |
+| 15 FPS (default) | **≈ 6%** total |
+| 24 FPS | ≈ 14–20% |
+| Before optimization (30 FPS) | ≈ 42% |
 
-Что сделано: собственный планировщик кадров с лимитом FPS и адаптивным ускорением при движении мыши, рендер в 1× вместо Retina-удвоения, непрозрачный WebView, отказ от `preserveDrawingBuffer`, пауза при перекрытии рабочего стола и полная выгрузка интерфейса, когда окно приложения закрыто.
+How: a custom frame scheduler with an FPS limit and an adaptive boost on mouse movement, 1× rendering instead of Retina doubling, an opaque WebView, no `preserveDrawingBuffer`, pausing when the desktop is covered, and unloading the whole interface while the app window is closed.
 
-## Документация
+The snow overlay is drawn by the CPU on a transparent full-screen layer, so it adds its own load while it's on. It is off by default and has its own pause settings.
 
-- 📘 [Руководство пользователя](docs/USER_GUIDE.md)
-- 🧪 [Форматы обоев: шейдеры, сцены, веб-API, пакеты](docs/FORMATS.md)
-- 🏗 [Архитектура](docs/ARCHITECTURE.md)
-- 📝 [История изменений](CHANGELOG.md)
+## Docs
 
-## Благодарности
+- 📘 [User guide](docs/USER_GUIDE.md)
+- 🧪 [Wallpaper formats: shaders, scenes, web API, packages](docs/FORMATS.md)
+- 🏗 [Architecture](docs/ARCHITECTURE.md)
+- 📝 [Changelog](CHANGELOG.md)
 
-Вдохновлено [Wallpaper Engine](https://www.wallpaperengine.io/). LiveWall — независимый проект и не связан с его авторами или с Valve. Steam и steamcmd — товарные знаки Valve Corporation.
+## Credits
 
-## Лицензия
+Inspired by [Wallpaper Engine](https://www.wallpaperengine.io/). LiveWall is an independent project and is not affiliated with its authors or with Valve. Steam and steamcmd are trademarks of Valve Corporation.
+
+Snow, multi-select and several fixes in 1.6.0 were contributed by [@Nanda070](https://github.com/Nanda070).
+
+## License
 
 [MIT](LICENSE) © 2026 Jinjer07
