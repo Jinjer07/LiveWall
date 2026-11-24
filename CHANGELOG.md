@@ -2,6 +2,11 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии — [SemVer](https://semver.org/lang/ru/).
 
+## [1.4.1] — 2026-11-24
+
+### Оптимизация
+- Индикатор звука в карточке «Сейчас» и пульсирующая точка LIVE рисуются слоями Core Animation и больше не перерисовывают интерфейс SwiftUI. Нагрузка при открытом окне снизилась примерно с 17 % до 4 % CPU.
+
 ## [1.4.0] — 2026-11-24
 
 Проверка и исправления на macOS 27.
@@ -98,6 +103,7 @@
 - Назначенные обои сбрасывались при запуске.
 - Глобальный перехват мыши запрашивал «Универсальный доступ» — курсор теперь опрашивается без разрешений.
 
+[1.4.1]: https://github.com/Jinjer07/LiveWall/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/Jinjer07/LiveWall/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/Jinjer07/LiveWall/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Jinjer07/LiveWall/compare/v1.2.2...v1.3.0

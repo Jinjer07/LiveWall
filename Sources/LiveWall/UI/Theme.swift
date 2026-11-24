@@ -253,20 +253,47 @@ struct SearchField: View {
 // MARK: - Пульсирующая точка «LIVE»
 
 struct LiveDot: View {
-    /// Пульсация — бесконечная анимация; включаем только там, где точка одна.
+    /// Пульсация выполняется Core Animation в системном рендер-сервере — интерфейс SwiftUI не перерисовывается.
     var animated = true
-    @State private var pulse = false
     var body: some View {
-        ZStack {
-            Circle().fill(Theme.scarlet.opacity(0.5)).frame(width: 8, height: 8)
-                .scaleEffect(pulse ? 2.4 : 1).opacity(pulse ? 0 : 1)
-            Circle().fill(Theme.scarlet).frame(width: 7, height: 7)
-        }
-        .onAppear {
-            guard animated else { return }
-            withAnimation(.easeOut(duration: 1.3).repeatForever(autoreverses: false)) { pulse = true }
-        }
+        PulseDotView(animated: animated).frame(width: 8, height: 8)
     }
+}
+
+private struct PulseDotView: NSViewRepresentable {
+    let animated: Bool
+    func makeNSView(context: Context) -> NSView {
+        let v = NSView(frame: NSRect(x: 0, y: 0, width: 8, height: 8))
+        v.wantsLayer = true
+        let color = NSColor(red: 1, green: 0.2, blue: 0.25, alpha: 1).cgColor
+        let ring = CALayer()
+        ring.frame = CGRect(x: 0, y: 0, width: 8, height: 8)
+        ring.cornerRadius = 4
+        ring.backgroundColor = color.copy(alpha: 0.5)
+        let dot = CALayer()
+        dot.frame = CGRect(x: 0.5, y: 0.5, width: 7, height: 7)
+        dot.cornerRadius = 3.5
+        dot.backgroundColor = color
+        v.layer?.addSublayer(ring)
+        v.layer?.addSublayer(dot)
+        if animated {
+            let scale = CABasicAnimation(keyPath: "transform.scale")
+            scale.fromValue = 1; scale.toValue = 2.4
+            let fade = CABasicAnimation(keyPath: "opacity")
+            fade.fromValue = 1; fade.toValue = 0
+            let g = CAAnimationGroup()
+            g.animations = [scale, fade]
+            g.duration = 1.3
+            g.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            g.repeatCount = .infinity
+            g.isRemovedOnCompletion = false
+            ring.add(g, forKey: "pulse")
+        } else {
+            ring.opacity = 0
+        }
+        return v
+    }
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
 // MARK: - Логотип

@@ -288,7 +288,6 @@ struct NowPlayingCard: View {
     @EnvironmentObject var app: AppState
     @EnvironmentObject var library: LibraryStore
     @EnvironmentObject var engine: WallpaperEngine
-    @State private var levels = [Float](repeating: 0, count: 16)
 
     var body: some View {
         let item = library.item(engine.primaryItemID)
@@ -330,20 +329,57 @@ struct NowPlayingCard: View {
             }
         }
         .panel(radius: 12, padding: 10)
-        .onReceive(app.audioSubject.throttle(for: .milliseconds(80), scheduler: RunLoop.main, latest: true)) { s in
-            var out = [Float](repeating: 0, count: 16)
-            for i in 0..<16 { out[i] = (s[i * 4] + s[64 + i * 4]) * 0.5 }
-            withAnimation(.linear(duration: 0.08)) { levels = out }
-        }
     }
 
+    /// Индикатор звука рисуется слоями Core Animation и не перерисовывает карточку SwiftUI.
     private var miniBars: some View {
-        HStack(alignment: .bottom, spacing: 1.5) {
-            ForEach(0..<16, id: \.self) { i in
-                Capsule().fill(Theme.redHGradient)
-                    .frame(width: 2.5, height: max(2, CGFloat(levels[i]) * 16))
+        MiniAudioBars().frame(width: 16 * 4, height: 16)
+    }
+}
+
+/// 16 полосок спектра на CALayer: обновляются напрямую из потока звука, без пересчёта интерфейса.
+struct MiniAudioBars: NSViewRepresentable {
+    func makeNSView(context: Context) -> BarsView { BarsView() }
+    func updateNSView(_ nsView: BarsView, context: Context) {}
+
+    final class BarsView: NSView {
+        private var bars: [CALayer] = []
+        private var sub: AnyCancellable?
+
+        override init(frame: NSRect) {
+            super.init(frame: frame)
+            wantsLayer = true
+            for _ in 0..<16 {
+                let l = CALayer()
+                l.backgroundColor = NSColor(red: 1, green: 0.2, blue: 0.25, alpha: 1).cgColor
+                l.cornerRadius = 1.25
+                layer?.addSublayer(l)
+                bars.append(l)
             }
         }
-        .frame(height: 16, alignment: .bottom)
+        required init?(coder: NSCoder) { fatalError() }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            // Подписка только пока индикатор на экране
+            if window == nil { sub = nil; return }
+            sub = AppState.shared.audioSubject
+                .throttle(for: .milliseconds(80), scheduler: RunLoop.main, latest: true)
+                .sink { [weak self] s in self?.show(s) }
+            show([Float](repeating: 0, count: 128))
+        }
+
+        private func show(_ s: [Float]) {
+            guard s.count >= 128 else { return }
+            let h = bounds.height, step = bounds.width / 16
+            CATransaction.begin()
+            CATransaction.setAnimationDuration(0.08)
+            for i in 0..<16 {
+                let v = CGFloat((s[i * 4] + s[64 + i * 4]) * 0.5)
+                let bh = max(2, min(h, v * h))
+                bars[i].frame = CGRect(x: CGFloat(i) * step, y: 0, width: 2.5, height: bh)
+            }
+            CATransaction.commit()
+        }
     }
 }
