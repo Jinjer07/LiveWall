@@ -22,7 +22,7 @@ struct SettingsView: View {
                 HStack(spacing: 14) {
                     LogoMark(size: 48)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("LiveWall 1.0").font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.text)
+                        Text("LiveWall " + RemoteConfig.appVersion).font(.system(size: 16, weight: .bold)).foregroundStyle(Theme.text)
                         Text(tr("Живые обои для macOS")).font(.system(size: 12)).foregroundStyle(Theme.text2)
                     }
                     Spacer()
@@ -85,7 +85,7 @@ struct SettingsView: View {
             } header: {
                 Text(tr("Аудио-визуализация"))
             } footer: {
-                Text(tr("Для захвата системного звука macOS требует разрешение «Запись экрана и системного звука». Видео при этом не записывается. Спектр доступен веб-обоям (wallpaperRegisterAudioListener), шейдерам (iAudio, iSpectrum) и сценам."))
+                Text(tr("macOS спросит разрешение «Только запись системного звука» (на macOS 14.2 и новее) — изображение экрана не захватывается, звук никуда не сохраняется. Спектр доступен веб-обоям (wallpaperRegisterAudioListener), шейдерам (iAudio, iSpectrum) и сценам."))
             }
 
             Section(tr("Интерактивность")) {

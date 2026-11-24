@@ -108,7 +108,23 @@ struct MenuBarContent: View {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    static let showWindowNote = Notification.Name("com.local.livewall.showMainWindow")
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Только одна копия LiveWall: вторая (например, автозапуск после восстановления окон)
+        // просит первую показать окно и сразу выходит, не трогая состояние и рабочий стол.
+        let me = ProcessInfo.processInfo.processIdentifier
+        if let id = Bundle.main.bundleIdentifier,
+           NSRunningApplication.runningApplications(withBundleIdentifier: id).contains(where: { $0.processIdentifier != me && !$0.isTerminated }) {
+            if !CommandLine.arguments.contains("--background") {
+                DistributedNotificationCenter.default().postNotificationName(Self.showWindowNote, object: nil, userInfo: nil, deliverImmediately: true)
+            }
+            exit(0)
+        }
+        DistributedNotificationCenter.default().addObserver(forName: Self.showWindowNote, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { MainWindow.show() }
+        }
+
         AppState.shared.bootstrap()
 
         func isMainWindow(_ w: NSWindow) -> Bool {

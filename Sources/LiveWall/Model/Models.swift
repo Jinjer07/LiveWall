@@ -226,6 +226,7 @@ struct AppSettings: Codable, Equatable {
     var calendarWidgets = false
     var nowPlayingWidgets = true
     var autoCheckUpdates = true
+    var hiddenWorkshopIDs: [String] = []   // удалённые из библиотеки предметы мастерской
 }
 
 struct PersistedState: Codable {

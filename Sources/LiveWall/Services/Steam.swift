@@ -261,11 +261,13 @@ final class SteamService: ObservableObject {
 
     /// Импортирует все поддерживаемые проекты, собирает из них плейлист «Wallpaper Engine» и включает его.
     @discardableResult
-    func importAllAsPlaylist(activate: Bool = true) -> Int {
+    func importAllAsPlaylist(activate: Bool = true, skipHidden: Bool = false) -> Int {
         scan()
         guard let app else { return 0 }
         var ids: [String] = []
+        if !skipHidden { app.settings.hiddenWorkshopIDs = [] }   // явный «импортировать всё» возвращает скрытые
         for p in projects where p.supported {
+            if skipHidden && app.settings.hiddenWorkshopIDs.contains(p.workshopID) { continue }
             if let it = importProject(p) { ids.append(it.id) }
             else if let ex = existing(p) { ids.append(ex.id) }
         }

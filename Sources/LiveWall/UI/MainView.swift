@@ -138,8 +138,8 @@ struct MainView: View {
                     UpdateBanner()
                     content
                     .id(app.sidebar ?? .library)
-                    .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 16)),
-                                            removal: .opacity))
+                    .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 12)),
+                                            removal: .identity))
                 }
             }
             .animation(Theme.spring, value: app.sidebar)
@@ -251,9 +251,12 @@ private struct SidebarRow: View {
                 Text(item.title)
                     .font(.system(size: 13, weight: selected ? .semibold : .medium))
                     .foregroundStyle(selected ? .white : (hover ? Theme.text : Theme.text2))
-                Spacer()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .layoutPriority(1)
+                Spacer(minLength: 4)
                 if let badge {
-                    Text(badge).font(.system(size: 10.5, weight: .bold)).monospacedDigit()
+                    Text(badge).font(.system(size: 10.5, weight: .bold)).monospacedDigit().lineLimit(1).fixedSize()
                         .foregroundStyle(selected ? .white : Theme.text3)
                         .padding(.horizontal, 7).padding(.vertical, 2)
                         .background(Capsule().fill(selected ? Color.white.opacity(0.18) : Theme.panel))

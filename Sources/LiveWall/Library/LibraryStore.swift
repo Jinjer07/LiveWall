@@ -231,6 +231,24 @@ final class LibraryStore: ObservableObject {
         }
     }
 
+    /// Средний кадр анимированного превью (первый кадр у GIF из мастерской часто чёрный).
+    static func stillFrame(_ url: URL) -> NSImage? {
+        guard let src = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        let count = CGImageSourceGetCount(src)
+        guard count > 0, let cg = CGImageSourceCreateImageAtIndex(src, count / 2, nil) else { return nil }
+        return NSImage(cgImage: cg, size: .zero)
+    }
+
+    /// Разовая миграция: GIF-обложки → JPEG из среднего кадра.
+    func fixAnimatedPreviews() {
+        for item in items {
+            guard let url = item.previewURL, url.pathExtension.lowercased() == "gif",
+                  FileManager.default.fileExists(atPath: url.path),
+                  let img = Self.stillFrame(url) else { continue }
+            savePreview(img, for: item.id)
+        }
+    }
+
     func savePreview(_ image: NSImage, for id: String) {
         guard var item = item(id), let jpeg = image.jpegData(maxDimension: 640) else { return }
         let url: URL

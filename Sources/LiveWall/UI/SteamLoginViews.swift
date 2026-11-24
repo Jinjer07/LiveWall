@@ -67,7 +67,10 @@ struct SteamAccountCard: View {
             case .signedIn:
                 HStack(spacing: 8) {
                     Button(tr("Выйти")) { account.signOut() }.buttonStyle(GhostButtonStyle(compact: true))
-                    Button { account.startSync() } label: { Label(tr("Синхронизировать мастерскую"), systemImage: "arrow.triangle.2.circlepath") }
+                    Button { account.startSync() } label: {
+                        Label(tr("Синхронизировать мастерскую"), systemImage: "arrow.triangle.2.circlepath")
+                            .lineLimit(1).fixedSize()
+                    }
                         .buttonStyle(CrimsonButtonStyle())
                         .disabled(isSyncing)
                 }

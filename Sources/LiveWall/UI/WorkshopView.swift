@@ -40,7 +40,9 @@ struct WorkshopView: View {
                     Button(tr("Указать папку вручную…")) {
                         if let u = Panels.chooseFolder() { app.settings.steamWorkshopPath = u.path; steam.scan() }
                     }
+                    .buttonStyle(GhostButtonStyle(compact: true))
                     Button(tr("Сканировать")) { steam.scan() }
+                        .buttonStyle(GhostButtonStyle(compact: true))
                     Spacer()
                     if steam.projects.contains(where: { $0.supported && !steam.isImported($0) }) {
                         Button(tr("Импортировать все поддерживаемые")) { steam.importAllSupported() }

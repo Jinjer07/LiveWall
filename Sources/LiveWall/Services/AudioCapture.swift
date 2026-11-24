@@ -2,9 +2,13 @@ import Foundation
 import ScreenCaptureKit
 import CoreMedia
 import Accelerate
+import CoreAudio
+import AudioToolbox
 
-/// Захват системного звука через ScreenCaptureKit и разложение в спектр:
+/// Захват системного звука и разложение в спектр:
 /// 128 значений 0…1 (64 полосы левого канала + 64 правого) — как в Wallpaper Engine.
+/// macOS 14.2+: аудиотап Core Audio (разрешение «Только запись системного звука», не слетает после обновлений).
+/// Старее: ScreenCaptureKit (разрешение «Запись экрана и системного звука»).
 final class AudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     private var stream: SCStream?
     private let queue = DispatchQueue(label: "livewall.audio", qos: .userInteractive)
@@ -20,7 +24,14 @@ final class AudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     private var lastEmit: CFAbsoluteTime = 0
     private var sampleRate: Double = 48000
 
-    var isRunning: Bool { stream != nil }
+    var isRunning: Bool { stream != nil || aggID != 0 }
+    /// Работает ли захват через аудиотап (без «Записи экрана»).
+    private(set) var usingTap = false
+
+    // Аудиотап Core Audio
+    private var tapID = AudioObjectID(0)
+    private var aggID = AudioObjectID(0)
+    private var procID: AudioDeviceIOProcID?
 
     override init() {
         window = [Float](repeating: 0, count: 1024)
@@ -31,9 +42,20 @@ final class AudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
 
     deinit { if let fft { vDSP_destroy_fftsetup(fft) } }
 
+    static var tapSupported: Bool {
+        if #available(macOS 14.2, *) { return true }
+        return false
+    }
+
     func start(handler: @escaping ([Float]) -> Void) async throws {
         self.handler = handler
-        if stream != nil { return }
+        if isRunning { return }
+        if #available(macOS 14.2, *) {
+            do { try startTap(); usingTap = true; return } catch {
+                stopTap()   // переходим на ScreenCaptureKit
+            }
+        }
+        usingTap = false
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
         guard let display = content.displays.first else { throw LWError(tr("Нет дисплея для захвата звука")) }
         let filter = SCContentFilter(display: display, excludingWindows: [])
@@ -58,6 +80,99 @@ final class AudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         stream = nil
         handler = nil
         if let s { Task { try? await s.stopCapture() } }
+        stopTap()
+    }
+
+    // MARK: Аудиотап Core Audio (macOS 14.2+)
+
+    private static func processObject(pid: pid_t) -> AudioObjectID? {
+        var addr = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyTranslatePIDToProcessObject,
+                                              mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+        var pidVar = pid
+        var obj = AudioObjectID(0)
+        var size = UInt32(MemoryLayout<AudioObjectID>.size)
+        let err = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &addr,
+                                             UInt32(MemoryLayout<pid_t>.size), &pidVar, &size, &obj)
+        return err == noErr && obj != 0 ? obj : nil
+    }
+
+    @available(macOS 14.2, *)
+    private func startTap() throws {
+        // Не слушаем звук самого LiveWall (видео-обои)
+        let excluded = Self.processObject(pid: getpid()).map { [$0] } ?? []
+        let desc = CATapDescription(stereoGlobalTapButExcludeProcesses: excluded)
+        desc.uuid = UUID()
+        desc.isPrivate = true
+        desc.muteBehavior = .unmuted
+        var tap = AudioObjectID(0)
+        var err = AudioHardwareCreateProcessTap(desc, &tap)
+        guard err == noErr, tap != 0 else { throw LWError("tap \(err)") }
+        tapID = tap
+
+        let agg: [String: Any] = [
+            kAudioAggregateDeviceNameKey: "LiveWall Audio Tap",
+            kAudioAggregateDeviceUIDKey: "com.local.livewall.tap.\(UUID().uuidString)",
+            kAudioAggregateDeviceIsPrivateKey: true,
+            kAudioAggregateDeviceIsStackedKey: false,
+            kAudioAggregateDeviceTapAutoStartKey: true,
+            kAudioAggregateDeviceTapListKey: [[kAudioSubTapUIDKey: desc.uuid.uuidString,
+                                               kAudioSubTapDriftCompensationKey: true]],
+        ]
+        var device = AudioObjectID(0)
+        err = AudioHardwareCreateAggregateDevice(agg as CFDictionary, &device)
+        guard err == noErr, device != 0 else { throw LWError("aggregate \(err)") }
+        aggID = device
+
+        var fmt = AudioStreamBasicDescription()
+        var size = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+        var addr = AudioObjectPropertyAddress(mSelector: kAudioTapPropertyFormat, mScope: kAudioObjectPropertyScopeGlobal,
+                                              mElement: kAudioObjectPropertyElementMain)
+        if AudioObjectGetPropertyData(tap, &addr, 0, nil, &size, &fmt) == noErr, fmt.mSampleRate > 0 {
+            sampleRate = fmt.mSampleRate
+        }
+        let isFloat = fmt.mFormatFlags & kAudioFormatFlagIsFloat != 0 || fmt.mFormatID == 0
+        var proc: AudioDeviceIOProcID?
+        err = AudioDeviceCreateIOProcIDWithBlock(&proc, device, queue) { [weak self] _, inData, _, _, _ in
+            guard let self, isFloat else { return }
+            self.ingest(UnsafeMutableAudioBufferListPointer(UnsafeMutablePointer(mutating: inData)))
+            self.process()
+        }
+        guard err == noErr, let proc else { throw LWError("ioproc \(err)") }
+        procID = proc
+        err = AudioDeviceStart(device, proc)
+        guard err == noErr else { throw LWError("start \(err)") }
+    }
+
+    private func stopTap() {
+        if aggID != 0, let p = procID {
+            AudioDeviceStop(aggID, p)
+            AudioDeviceDestroyIOProcID(aggID, p)
+        }
+        procID = nil
+        if aggID != 0 { AudioHardwareDestroyAggregateDevice(aggID); aggID = 0 }
+        if tapID != 0 {
+            if #available(macOS 14.2, *) { AudioHardwareDestroyProcessTap(tapID) }
+            tapID = 0
+        }
+        usingTap = false
+    }
+
+    /// Раскладывает буферы по каналам (раздельные или чередующиеся).
+    private func ingest(_ abl: UnsafeMutableAudioBufferListPointer) {
+        if abl.count >= 2 {
+            append(abl[0], to: &bufL)
+            append(abl[1], to: &bufR)
+        } else if abl.count == 1 {
+            let b = abl[0]
+            guard let data = b.mData else { return }
+            let ch = max(1, Int(b.mNumberChannels))
+            let total = Int(b.mDataByteSize) / MemoryLayout<Float>.size
+            let p = data.assumingMemoryBound(to: Float.self)
+            var i = 0
+            while i + ch - 1 < total {
+                bufL.append(p[i]); bufR.append(ch > 1 ? p[i + 1] : p[i]); i += ch
+            }
+        }
     }
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {
@@ -71,22 +186,7 @@ final class AudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         let asbd = asbdPtr.pointee
         guard asbd.mFormatID == kAudioFormatLinearPCM, asbd.mFormatFlags & kAudioFormatFlagIsFloat != 0 else { return }
         sampleRate = asbd.mSampleRate > 0 ? asbd.mSampleRate : 48000
-        try? sb.withAudioBufferList { abl, _ in
-            if abl.count >= 2 {
-                append(abl[0], to: &bufL)
-                append(abl[1], to: &bufR)
-            } else if abl.count == 1 {
-                let b = abl[0]
-                guard let data = b.mData else { return }
-                let ch = max(1, Int(b.mNumberChannels))
-                let total = Int(b.mDataByteSize) / MemoryLayout<Float>.size
-                let p = data.assumingMemoryBound(to: Float.self)
-                var i = 0
-                while i + ch - 1 < total {
-                    bufL.append(p[i]); bufR.append(ch > 1 ? p[i + 1] : p[i]); i += ch
-                }
-            }
-        }
+        try? sb.withAudioBufferList { abl, _ in ingest(abl) }
         process()
     }
 

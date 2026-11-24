@@ -73,6 +73,7 @@ final class AppState: ObservableObject {
         bootstrapped = true
         RuntimeFiles.install()
         library.cleanupOrphans()
+        library.fixAnimatedPreviews()
         var firstRun = false
         if !settings.samplesInstalled {
             Samples.install(into: library)
@@ -146,7 +147,7 @@ final class AppState: ObservableObject {
             engine.pushAudio([Float](repeating: 0, count: 128))
             return
         }
-        if !CGPreflightScreenCaptureAccess() {
+        if !AudioCapture.tapSupported && !CGPreflightScreenCaptureAccess() {
             if userInitiated {
                 // Показывает системный запрос (или открывает список в Настройках)
                 if !CGRequestScreenCaptureAccess() {
@@ -167,7 +168,7 @@ final class AppState: ObservableObject {
                         self?.engine.pushAudio(spectrum)
                     }
                 }
-                audioStatus = tr("Работает")
+                audioStatus = audio.usingTap ? tr("Работает (системный звук)") : tr("Работает")
             } catch {
                 audioStatus = tr("Нет доступа: %@. Разрешите LiveWall в «Системные настройки → Конфиденциальность и безопасность → Запись экрана и системного звука», затем перезапустите приложение.", error.localizedDescription)
             }
@@ -182,6 +183,10 @@ final class AppState: ObservableObject {
     }
 
     func remove(_ item: WallpaperItem) {
+        // Удалённые обои из мастерской не возвращаем при синхронизации
+        if item.source == .steam, let wid = item.workshopID, !settings.hiddenWorkshopIDs.contains(wid) {
+            settings.hiddenWorkshopIDs.append(wid)
+        }
         engine.itemRemoved(item.id)
         for i in playlists.indices {
             playlists[i].items.removeAll { $0 == item.id }

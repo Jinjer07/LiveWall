@@ -45,9 +45,11 @@
 
 1. Download the zip from the [latest release](https://github.com/Jinjer07/LiveWall/releases/latest) and unzip it.
 2. Move `LiveWall.app` to Applications.
-3. The app is ad-hoc signed, so on first launch use **right-click → Open**.
+3. The app isn't notarized by Apple, so macOS asks once before opening it:
+   - **macOS 14 Sonoma:** right-click LiveWall → Open → Open.
+   - **macOS 15 and later (incl. 26–27):** launch it, dismiss the warning, then System Settings → Privacy & Security → “Open Anyway” at the bottom.
 
-Requires macOS 14+ on Apple Silicon.
+Requires macOS 14+ on Apple Silicon (tested on 14.6 and 27.2).
 
 ## Building
 

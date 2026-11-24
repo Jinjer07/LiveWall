@@ -33,7 +33,7 @@ final class SteamAccount: ObservableObject {
     // MARK: Псевдотерминал
 
     /// Процесс steamcmd с PTY: steamcmd спрашивает пароль и коды так же, как в Терминале.
-    final class PTYProcess {
+    final class PTYProcess: @unchecked Sendable {
         let process = Process()
         private var master: Int32 = -1
         private var slave: Int32 = -1
@@ -165,11 +165,13 @@ final class SteamAccount: ObservableObject {
             login = .success
             session = .signedIn(username)
         }
-        if let r = low.range(of: "failed (") ?? low.range(of: "error") {
-            let line = String(buffer[r.lowerBound...].prefix(120)).components(separatedBy: "\n").first ?? ""
-            if line.lowercased().contains("invalid password") { login = .failed(tr("Неверный логин или пароль")) }
-            else if line.lowercased().contains("rate limit") { login = .failed(tr("Слишком много попыток. Подождите немного.")) }
-            else if !line.lowercased().contains("timeout") && login != .success && !line.isEmpty { login = .failed(line) }
+        // Ошибки steamcmd: «FAILED (Invalid Password)», «ERROR! …» — только последняя строка вывода
+        let lines = buffer.components(separatedBy: CharacterSet.newlines).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        if let line = lines.last(where: { $0.contains("FAILED (") || $0.contains("ERROR!") }), login != .success {
+            let l = line.lowercased()
+            if l.contains("invalid password") { login = .failed(tr("Неверный логин или пароль")) }
+            else if l.contains("rate limit") { login = .failed(tr("Слишком много попыток. Подождите немного.")) }
+            else if !l.contains("timeout") { login = .failed(line.trimmingCharacters(in: .whitespaces)) }
         }
     }
 
@@ -187,12 +189,11 @@ final class SteamAccount: ObservableObject {
     }
 
     func signOut() {
-        // steamcmd хранит вход в config/config.vdf — удаляем только кэш входа этого пользователя
-        let dirs = [Self.bundledDir.appendingPathComponent("config"),
-                    FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/Steam/config")]
-        for d in dirs {
-            for f in ["config.vdf", "loginusers.vdf"] { try? FileManager.default.removeItem(at: d.appendingPathComponent(f)) }
-        }
+        // Сбрасываем вход только у steamcmd, который установил сам LiveWall.
+        // Общие файлы Steam (~/Library/Application Support/Steam) не трогаем — иначе вылетит и обычный клиент Steam.
+        let own = Self.bundledDir.appendingPathComponent("config")
+        for f in ["config.vdf", "loginusers.vdf"] { try? FileManager.default.removeItem(at: own.appendingPathComponent(f)) }
+        app?.settings.steamUser = ""
         let store = WKWebsiteDataStore.default()
         store.fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
             let steamRecords = records.filter { $0.displayName.contains("steam") }
@@ -215,7 +216,7 @@ final class SteamAccount: ObservableObject {
                 try Shell.run("/usr/bin/tar", ["-xzf", tmp.path, "-C", Self.bundledDir.path])
                 // Первый запуск докачивает файлы steamcmd
                 let exe = Self.bundledSteamCMD.path
-                try await Task.detached { try Shell.run(exe, ["+quit"]) }.value
+                _ = try await Task.detached { try Shell.run(exe, ["+quit"]) }.value
                 sync = .idle
                 objectWillChange.send()
                 app?.showToast(tr("steamcmd установлен"))
@@ -261,7 +262,8 @@ final class SteamAccount: ObservableObject {
         let have = Set(app.library.items.compactMap { $0.workshopID })
         // уже скачанные, но не импортированные — тоже подхватим
         let onDisk = Set(steam.existingDirs.flatMap { (try? FileManager.default.contentsOfDirectory(atPath: $0.path)) ?? [] })
-        let missing = ids.filter { !have.contains($0) && !onDisk.contains($0) }
+        let hidden = Set(app.settings.hiddenWorkshopIDs)
+        let missing = ids.filter { !have.contains($0) && !onDisk.contains($0) && !hidden.contains($0) }
         let before = app.library.items.count
         if !missing.isEmpty {
             var done = 0
@@ -283,7 +285,7 @@ final class SteamAccount: ObservableObject {
         }
         sync = .importing
         await Task.yield()
-        steam.importAllAsPlaylist(activate: false)
+        steam.importAllAsPlaylist(activate: false, skipHidden: true)
         let added = app.library.items.count - before
         sync = .done(new: max(0, added))
         app.showToast(added > 0 ? tr("Добавлено из мастерской: %@", added) : tr("Новых подписок нет"))
