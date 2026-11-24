@@ -1,0 +1,134 @@
+# Auto-release: when the version in Info.plist changes on main and there is no
+# release for it yet, build LiveWall, sign it, and publish a GitHub release.
+# The in-app updater then offers it to every user.
+#
+# Signing: the app must be signed with the same "LiveWall Code Signing"
+# certificate every time, or macOS resets users' permissions after the update.
+# The certificate comes from two repository secrets:
+#   MACOS_CERT_P12      base64 of a .p12 with the certificate and its private key
+#   MACOS_CERT_PASSWORD password of that .p12
+# Without them a real release is refused; a dry run is signed ad-hoc.
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: [Info.plist]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build only, don't publish a release"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: v
+        run: |
+          VER=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Info.plist)
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          if gh release view "v$VER" >/dev/null 2>&1; then
+            echo "Release v$VER already exists, nothing to do."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Import signing certificate
+        if: steps.v.outputs.exists == 'false' || env.DRY_RUN == 'true'
+        env:
+          P12: ${{ secrets.MACOS_CERT_P12 }}
+          P12_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          if [ -z "$P12" ]; then
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "::warning::No MACOS_CERT_P12 secret: dry run is signed ad-hoc."
+              echo "SIGN_IDENTITY=-" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            echo "::error::MACOS_CERT_P12 secret is missing. Releasing an ad-hoc build would reset users' macOS permissions."
+            exit 1
+          fi
+          KC="$RUNNER_TEMP/livewall.keychain-db"
+          KC_PASS=$(uuidgen)
+          echo "$P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KC_PASS" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$KC_PASS" "$KC"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KC_PASS" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+          echo "SIGN_IDENTITY=LiveWall Code Signing" >> "$GITHUB_ENV"
+
+      - name: Build
+        if: steps.v.outputs.exists == 'false' || env.DRY_RUN == 'true'
+        run: |
+          swiftc --version
+          LIVEWALL_SIGN_IDENTITY="$SIGN_IDENTITY" ./build.sh
+          if [ "$SIGN_IDENTITY" = "-" ]; then
+            codesign --force --deep --sign - build/LiveWall.app
+          fi
+          codesign --verify --deep --strict build/LiveWall.app
+          codesign -dvv build/LiveWall.app 2>&1 | grep -E "Identifier=|Authority=|Signature=" || true
+          if [ "$SIGN_IDENTITY" != "-" ]; then
+            codesign -dvv build/LiveWall.app 2>&1 | grep -q "Authority=LiveWall Code Signing" \
+              || { echo "::error::App is not signed with LiveWall Code Signing"; exit 1; }
+          fi
+
+      - name: Package
+        id: pkg
+        if: steps.v.outputs.exists == 'false' || env.DRY_RUN == 'true'
+        run: |
+          VER=${{ steps.v.outputs.version }}
+          ZIP="LiveWall-$VER.zip"
+          ditto -c -k --keepParent build/LiveWall.app "$ZIP"
+          SHA=$(shasum -a 256 "$ZIP" | cut -d' ' -f1)
+          echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
+          # Release notes: this version's section of CHANGELOG.md, plus the checksum
+          # the in-app updater verifies.
+          awk -v v="$VER" '
+            $0 ~ "^## \\[" v "\\]" { on=1; next }
+            on && /^## \[/ { exit }
+            on && /^\[[0-9]/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "Changes since the previous release: see the commit history." > notes.md
+          fi
+          printf '\nSHA-256: `%s`\n' "$SHA" >> notes.md
+          cat notes.md
+
+      - name: Upload build (dry run)
+        if: env.DRY_RUN == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: LiveWall-${{ steps.v.outputs.version }}
+          path: ${{ steps.pkg.outputs.zip }}
+
+      - name: Publish release
+        if: steps.v.outputs.exists == 'false' && env.DRY_RUN != 'true'
+        run: |
+          VER=${{ steps.v.outputs.version }}
+          # A release may have been published by hand while this job was building.
+          if gh release view "v$VER" >/dev/null 2>&1; then
+            echo "Release v$VER appeared meanwhile, skipping."; exit 0
+          fi
+          gh release create "v$VER" "${{ steps.pkg.outputs.zip }}" \
+            --target "$GITHUB_SHA" --title "LiveWall $VER" --notes-file notes.md --latest
