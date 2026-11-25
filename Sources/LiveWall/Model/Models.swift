@@ -255,6 +255,7 @@ struct PersistedState: Codable {
     var playlists: [Playlist] = []
     var playlistIndex: Int = 0
     var lastPlaylistID: String? = nil   // последний выбранный плейлист: запускается при старте, если обои не заданы
+    var userPaused = false              // «Пауза всех обоев» переживает перезапуск
 }
 
 enum SidebarItem: String, Hashable, CaseIterable {

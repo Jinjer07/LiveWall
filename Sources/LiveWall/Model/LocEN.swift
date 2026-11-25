@@ -612,5 +612,8 @@ LiveWall ставит стоп-кадр текущих обоев системн
 Оформление ||| Appearance
 Новогоднее оформление ||| Holiday theme
 Алый и белый, как леденец, мерцающие гирлянды и украшения ||| Candy-cane red and white, twinkling garlands and ornaments
+Экран блокировки ||| Lock screen
+LiveWall ставит стоп-кадр текущих обоев системной картинкой рабочего стола — её macOS показывает на экране блокировки. Если выключить, вернётся картинка, которая стояла до LiveWall. ||| LiveWall sets a still frame of the current wallpaper as the system desktop picture, which macOS shows on the lock screen. Turn it off to get back the picture you had before LiveWall.
+Обои на экране блокировки ||| Wallpaper on lock screen
 """#
 }

@@ -55,7 +55,12 @@ final class WallpaperEngine: ObservableObject {
     @Published private(set) var screens: [ScreenInfo] = []
     @Published var assignments: [String: String] = [:]
     @Published var spanItemID: String?
-    @Published var userPaused = false { didSet { updatePauseStates() } }
+    @Published var userPaused = false {
+        didSet {
+            updatePauseStates()
+            if userPaused != oldValue { app?.saveState() }   // пауза сохраняется и после перезапуска
+        }
+    }
     @Published var errors: [String: String] = [:]
 
     private var slots: [String: Slot] = [:]

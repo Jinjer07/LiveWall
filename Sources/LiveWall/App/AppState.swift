@@ -70,6 +70,7 @@ final class AppState: ObservableObject {
         lastPlaylistID = st.lastPlaylistID ?? st.activePlaylistID
         playlists = st.playlists
         activePlaylistID = st.activePlaylistID
+        engine.userPaused = st.userPaused
         steam.app = self
     }
 
@@ -90,6 +91,8 @@ final class AppState: ObservableObject {
         monitor.screensProvider = { [weak self] in self?.engine.screens ?? [] }
         monitor.onChange = { [weak self] in self?.engine.updatePauseStates(); self?.snow.updatePause() }
         engine.setup()
+        // Экран блокировки выключен, а системной картинкой ещё стоит стоп-кадр LiveWall — вернуть прежнюю
+        if !settings.lockScreenSync { lockScreen.restoreOriginals() }
         monitor.start()
         snow.start()
         mouse.handler = { [weak self] kind, p in self?.engine.handleMouse(kind, at: p) }
@@ -118,7 +121,7 @@ final class AppState: ObservableObject {
     func saveState() {
         let st = PersistedState(assignments: engine.assignments, spanItemID: engine.spanItemID,
                                 activePlaylistID: activePlaylistID, playlists: playlists, playlistIndex: playlistIndex,
-                                lastPlaylistID: lastPlaylistID)
+                                lastPlaylistID: lastPlaylistID, userPaused: engine.userPaused)
         Persistence.save(st, to: Paths.state)
     }
 
@@ -145,6 +148,7 @@ final class AppState: ObservableObject {
         if old.ambientEnabled != settings.ambientEnabled { engine.pushAmbient(ambientService.state) }
         if snowSettingsDiffer(old) { snow.settingsChanged() }
         if !old.lockScreenSync && settings.lockScreenSync { lockScreen.syncAll() }
+        if old.lockScreenSync && !settings.lockScreenSync { lockScreen.restoreOriginals() }
         if old.nowPlayingWidgets != settings.nowPlayingWidgets || old.calendarWidgets != settings.calendarWidgets { sysInfo.refresh() }
     }
 

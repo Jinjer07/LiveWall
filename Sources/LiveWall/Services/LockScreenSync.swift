@@ -16,6 +16,52 @@ final class LockScreenSync {
 
     private var enabled: Bool { app?.settings.lockScreenSync ?? false }
 
+    // Исходные картинки рабочего стола (до LiveWall) по экранам: при выключении функции возвращаем их
+    private static let originalsFile = dir.appendingPathComponent("original.json")
+    private var originals: [String: String] = {
+        guard let d = try? Data(contentsOf: LockScreenSync.originalsFile),
+              let o = try? JSONDecoder().decode([String: String].self, from: d) else { return [:] }
+        return o
+    }()
+
+    private func rememberOriginal(_ screen: NSScreen, key: String) {
+        guard originals[key] == nil, let cur = NSWorkspace.shared.desktopImageURL(for: screen),
+              !cur.path.hasPrefix(Self.dir.path) else { return }       // свои стоп-кадры за «исходные» не считаем
+        originals[key] = cur.path
+        try? FileManager.default.createDirectory(at: Self.dir, withIntermediateDirectories: true)
+        if let d = try? JSONEncoder().encode(originals) { try? d.write(to: Self.originalsFile, options: .atomic) }
+    }
+
+    /// Функцию выключили: возвращаем на всех экранах прежнюю картинку (и на экран блокировки)
+    /// и удаляем стоп-кадры LiveWall.
+    func restoreOriginals() {
+        pending.values.forEach { $0.cancel() }
+        pending = [:]
+        applied = [:]
+        for screen in NSScreen.screens {
+            let key = WallpaperEngine.screenInfo(screen).key
+            guard let cur = NSWorkspace.shared.desktopImageURL(for: screen), cur.path.hasPrefix(Self.dir.path) else { continue }
+            var target: URL?
+            if let p = originals[key], FileManager.default.fileExists(atPath: p) { target = URL(fileURLWithPath: p) }
+            // Исходная картинка не сохранилась (функция включалась в старой версии) — берём стандартную
+            if target == nil { target = Self.defaultPicture() }
+            if let target { try? NSWorkspace.shared.setDesktopImageURL(target, for: screen, options: [:]) }
+        }
+        originals = [:]
+        try? FileManager.default.removeItem(at: Self.dir)
+    }
+
+    private static func defaultPicture() -> URL? {
+        let fm = FileManager.default
+        for dir in ["/System/Library/Desktop Pictures", "/Library/Desktop Pictures"] {
+            guard let files = try? fm.contentsOfDirectory(atPath: dir) else { continue }
+            if let f = files.sorted().first(where: { ["heic", "jpg", "png"].contains(($0 as NSString).pathExtension.lowercased()) }) {
+                return URL(fileURLWithPath: dir).appendingPathComponent(f)
+            }
+        }
+        return nil
+    }
+
     /// Вызывается после загрузки обоев на экран. Ждём, пока рендерер нарисует первые кадры.
     func schedule(screenKey: String, itemID: String?, delay: TimeInterval = 4) {
         pending[screenKey]?.cancel()
@@ -95,6 +141,7 @@ final class LockScreenSync {
             .imageScaling: NSImageScaling.scaleProportionallyUpOrDown.rawValue,
             .allowClipping: true,
         ]
+        rememberOriginal(screen, key: key)
         do {
             try NSWorkspace.shared.setDesktopImageURL(url, for: screen, options: opts)
             applied[key] = item.id
