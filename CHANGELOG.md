@@ -2,7 +2,7 @@
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [1.7.0] — 2026-11-25
 
 ### Added
 - **Holiday theme** (Settings → Appearance, on by default): candy-cane red and white palette, candy stripes on the selected sidebar item, primary buttons and page headers, a twinkling garland of red and white bulbs along the top of the window, and crossed candy canes with holly next to the logo. The twinkling runs on Core Animation, so it doesn't redraw the interface.
@@ -168,6 +168,7 @@ Full functionality and redesign, without the icon and docs.
 - Assigned wallpapers were reset on launch.
 - Global mouse monitoring asked for Accessibility access; the cursor is now polled without permissions.
 
+[1.7.0]: https://github.com/Jinjer07/LiveWall/compare/v1.6.2...v1.7.0
 [1.6.2]: https://github.com/Jinjer07/LiveWall/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/Jinjer07/LiveWall/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/Jinjer07/LiveWall/compare/v1.5.0...v1.6.0
