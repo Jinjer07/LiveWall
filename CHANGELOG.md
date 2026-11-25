@@ -2,6 +2,12 @@
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [SemVer](https://semver.org/).
 
+## [1.7.1] — 2026-11-25
+
+### Fixed
+- **Workshop sync no longer fails with “NSURLErrorDomain error -999”.** Steam redirects the subscriptions page on the way (`/my/…` → `/id/<name>/…`), and LiveWall took the interrupted first load for an error. It now waits for the final page, and gives a clear message if Steam doesn't answer within 45 seconds.
+- **Wallpaper Engine scenes with a video background no longer show gray noise.** Such scenes keep an mp4 inside the texture, and the converter read it as pixels. A full-screen video texture is now extracted and the wallpaper is imported as a video wallpaper (layers on top of the video, usually particles, are not carried over). Re-import a scene that already shows noise: delete it from the library and sync again.
+
 ## [1.7.0] — 2026-11-25
 
 ### Added
@@ -168,6 +174,7 @@ Full functionality and redesign, without the icon and docs.
 - Assigned wallpapers were reset on launch.
 - Global mouse monitoring asked for Accessibility access; the cursor is now polled without permissions.
 
+[1.7.1]: https://github.com/Jinjer07/LiveWall/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/Jinjer07/LiveWall/compare/v1.6.2...v1.7.0
 [1.6.2]: https://github.com/Jinjer07/LiveWall/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/Jinjer07/LiveWall/compare/v1.6.0...v1.6.1

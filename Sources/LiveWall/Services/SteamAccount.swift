@@ -312,21 +312,43 @@ final class SteamWeb: NSObject, WKNavigationDelegate {
         webView.navigationDelegate = self
     }
 
+    private var loadToken = 0
+
     private func load(_ url: URL) async throws {
         try await withCheckedThrowingContinuation { (c: CheckedContinuation<Void, Error>) in
             loadCont?.resume(throwing: WebError.failed("cancelled"))
             loadCont = c
+            loadToken += 1
+            let token = loadToken
             webView.load(URLRequest(url: url))
+            // Страница так и не догрузилась — не висим вечно
+            DispatchQueue.main.asyncAfter(deadline: .now() + 45) { [weak self] in
+                MainActor.assumeIsolated {
+                    guard let self, self.loadToken == token, let c = self.loadCont else { return }
+                    self.loadCont = nil
+                    c.resume(throwing: WebError.failed(tr("Steam не ответил вовремя. Попробуйте ещё раз.")))
+                }
+            }
         }
+    }
+
+    /// Steam по дороге перенаправляет страницу (/my → /id/…, проверка входа скриптом), и WebKit
+    /// сообщает о прерванной загрузке (-999, «Frame load interrupted»). Это не ошибка: ждём следующую загрузку.
+    private static func isInterruption(_ error: Error) -> Bool {
+        let e = error as NSError
+        return (e.domain == NSURLErrorDomain && e.code == NSURLErrorCancelled)
+            || (e.domain == "WebKitErrorDomain" && e.code == 102)
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         loadCont?.resume(); loadCont = nil
     }
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        if Self.isInterruption(error) { return }
         loadCont?.resume(throwing: error); loadCont = nil
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        if Self.isInterruption(error) { return }
         loadCont?.resume(throwing: error); loadCont = nil
     }
 

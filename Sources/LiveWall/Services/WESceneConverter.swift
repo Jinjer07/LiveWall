@@ -96,11 +96,18 @@ enum WETexture {
         var images: [CGImage]                                   // первый mip каждого изображения
         var frames: [(image: Int, delay: Double, rect: CGRect)] // кадры анимации (спрайт-лист)
         var isAnimated: Bool { frames.count > 1 }      // GIF или спрайт-лист
+        var video: Data? = nil                          // видеотекстура: внутри лежит mp4
+    }
+
+    /// Видеотекстура WE хранит вместо пикселей обычный mp4-файл (с «ftyp» в начале).
+    static func isMP4(_ d: Data) -> Bool {
+        d.count > 12 && d.subdata(in: d.startIndex + 4 ..< d.startIndex + 8) == Data("ftyp".utf8)
     }
 
     /// Декодирует .tex в CGImage (первый кадр, старший mip-уровень).
     static func decode(_ data: Data) throws -> CGImage {
         let info = try parse(data)
+        guard !info.images.isEmpty else { throw LWError(tr("это видеотекстура, а не картинка")) }
         if info.isAnimated, let f = info.frames.first, f.image < info.images.count {
             return info.images[f.image].cropping(to: f.rect) ?? info.images[f.image]
         }
@@ -127,6 +134,7 @@ enum WETexture {
         if ver >= 4 { _ = try r.i32() }
 
         var images: [CGImage] = []
+        var video: Data? = nil
         for _ in 0..<imageCount {
             let mipCount = Int(try r.i32())
             guard mipCount > 0, mipCount < 32 else { throw LWError(tr("нет mip-уровней")) }
@@ -142,6 +150,11 @@ enum WETexture {
                 payload = try r.bytes(size)
                 guard m == 0 else { continue }
                 if compressed == 1 { payload = try lz4(payload, rawSize: rawSize) }
+                if isMP4(payload) {
+                    // Пиксели читать нельзя — это видео; иначе вместо картинки получается шум
+                    if video == nil { video = payload }
+                    continue
+                }
                 images.append(try image(payload, format: format, freeImageFormat: freeImageFormat, w: w, h: h, cropW: w, cropH: h))
             }
         }
@@ -175,8 +188,9 @@ enum WETexture {
                 return (cw == img.width && ch == img.height) ? img : (img.cropping(to: CGRect(x: 0, y: 0, width: cw, height: ch)) ?? img)
             }
         }
+        if images.isEmpty && video == nil { throw LWError(tr("пустая текстура")) }
         return Info(format: format, flags: flags, imgW: imgW, imgH: imgH, images: images,
-                    frames: frames.map { (image: $0.0, delay: $0.1, rect: $0.2) })
+                    frames: frames.map { (image: $0.0, delay: $0.1, rect: $0.2) }, video: video)
     }
 
     private static func image(_ payload: Data, format: Int32, freeImageFormat: Int32, w: Int, h: Int, cropW: Int, cropH: Int) throws -> CGImage {
@@ -345,6 +359,7 @@ enum WESceneConverter {
         var doc: SceneDoc
         var images: [String: CGImage]          // имя файла → картинка
         var animated: [String: WETexture.Info] // GIF-слои
+        var backgroundVideo: (file: String, data: Data)? = nil  // фон сцены — видео
         var notes: [String]                    // что не удалось перенести
     }
 
@@ -409,6 +424,7 @@ enum WESceneConverter {
         var notes: [String] = []
         var images: [String: CGImage] = [:]
         var animated: [String: WETexture.Info] = [:]
+        var backgroundVideo: (file: String, data: Data)? = nil
         let general = scene["general"] as? [String: Any] ?? [:]
         var W = 1920.0, H = 1080.0
         if let ortho = general["orthogonalprojection"] as? [String: Any] {
@@ -531,6 +547,17 @@ enum WESceneConverter {
             let img: CGImage
             do {
                 let info = try WETexture.parse(texData)
+                if let mp4 = info.video {
+                    // Видео на весь экран (обычно первый слой) — это фон: сцена станет видеообоями.
+                    // Видеослои поменьше сцена LiveWall показать не может — пропускаем.
+                    let dispW = (sizeV.count >= 2 && sizeV[0] > 0 ? sizeV[0] : Double(info.imgW)) * (scale.first ?? 1)
+                    if backgroundVideo == nil && (doc.layers.allSatisfy { $0.kind != .image }) && dispW >= W * 0.9 {
+                        backgroundVideo = ("background.mp4", mp4)
+                    } else {
+                        notes.append(tr("видеослой «%@» не переносится", name))
+                    }
+                    continue
+                }
                 if info.isAnimated && info.flags & 4 != 0 {
                     texIndex += 1
                     let gif = String(format: "layer-%02d.gif", texIndex)
@@ -575,10 +602,10 @@ enum WESceneConverter {
             applyEffects(obj["effects"] as? [[String: Any]] ?? [], to: &l, notes: &notes)
             doc.layers.append(l)
         }
-        if doc.layers.isEmpty { throw LWError(tr("в сцене не нашлось слоёв, которые можно перенести")) }
+        if doc.layers.isEmpty && backgroundVideo == nil { throw LWError(tr("в сцене не нашлось слоёв, которые можно перенести")) }
         var seen = Set<String>()
         notes = notes.filter { seen.insert($0).inserted }
-        return Result(doc: doc, images: images, animated: animated, notes: notes)
+        return Result(doc: doc, images: images, animated: animated, backgroundVideo: backgroundVideo, notes: notes)
     }
 
     private static func applyEffects(_ effects: [[String: Any]], to l: inout SceneLayer, notes: inout [String]) {
@@ -623,6 +650,13 @@ enum WESceneConverter {
     /// Конвертирует проект WE в папку LiveWall: сцену или (для GIF-сцен) анимированную картинку.
     static func convert(folder: URL, into dest: URL) throws -> Output {
         let r = try convert(folder: folder)
+        // Фон — видео: сохраняем его как видеообои (слои поверх видео, обычно частицы, теряются)
+        if let v = r.backgroundVideo {
+            try v.data.write(to: dest.appendingPathComponent(v.file))
+            var notes = r.notes
+            if !r.doc.layers.isEmpty { notes.append(tr("слои поверх видео не переносятся")) }
+            return Output(type: .video, entry: v.file, notes: notes)
+        }
         let imageLayers = r.doc.layers.filter { $0.kind == .image }
         if imageLayers.count == 1, let (gifName, info) = r.animated.first {
             try WETexture.writeGIF(info, to: dest.appendingPathComponent(gifName))

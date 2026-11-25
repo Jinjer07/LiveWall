@@ -114,6 +114,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if RenderTest.requested { RenderTest.run(); return }
+        if let dirs = ProcessInfo.processInfo.environment["LW_WE_CONVERT"], let out = ProcessInfo.processInfo.environment["LW_WE_OUT"] {
+            // Отладка: конвертирует сцены WE (папки через «:») в LW_WE_OUT и выходит
+            for d in dirs.split(separator: ":") {
+                let src = URL(fileURLWithPath: String(d))
+                let dest = URL(fileURLWithPath: out).appendingPathComponent(src.lastPathComponent)
+                try? FileManager.default.createDirectory(at: dest, withIntermediateDirectories: true)
+                do { let o = try WESceneConverter.convert(folder: src, into: dest)
+                    NSLog("LW convert %@ -> %@ %@ | %@", src.lastPathComponent, o.type.rawValue, o.entry, o.notes.joined(separator: "; ")) }
+                catch { NSLog("LW convert %@ error: %@", src.lastPathComponent, error.localizedDescription) }
+            }
+            exit(0)
+        }
+        if ProcessInfo.processInfo.environment["LW_STEAM_FETCH"] != nil {
+            // Отладка: только читает список подписок мастерской (вход — cookies WebKit) и выходит
+            let web = SteamWeb()
+            Task { @MainActor in
+                do { let ids = try await web.fetchSubscriptions(); NSLog("LW steam fetch ok %d: %@", ids.count, ids.joined(separator: ",")) }
+                catch { NSLog("LW steam fetch error: %@", String(describing: error)) }
+                exit(0)
+            }
+            return
+        }
         // Только одна копия LiveWall: вторая (например, автозапуск после восстановления окон)
         // просит первую показать окно и сразу выходит, не трогая состояние и рабочий стол.
         let me = ProcessInfo.processInfo.processIdentifier

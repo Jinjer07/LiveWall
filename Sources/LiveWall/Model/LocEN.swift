@@ -13,6 +13,10 @@ enum LocEN {
 Применено: %@ ||| Applied: %@
 Растянуть на все экраны ||| Span across all displays
 Применить на все экраны ||| Apply to all displays
+Steam не ответил вовремя. Попробуйте ещё раз. ||| Steam didn’t respond in time. Please try again.
+это видеотекстура, а не картинка ||| this is a video texture, not an image
+видеослой «%@» не переносится ||| video layer “%@” isn’t carried over
+слои поверх видео не переносятся ||| layers on top of the video aren’t carried over
 Снять с рабочего стола ||| Remove from desktop
 Открыть в редакторе сцен ||| Open in Scene Editor
 Редактировать код шейдера ||| Edit shader code
