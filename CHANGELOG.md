@@ -2,7 +2,7 @@
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [1.6.2] — 2026-11-25
 
 ### Added
 - **Same wallpaper on the lock screen** (Settings → Displays, on by default). A few seconds after a wallpaper changes, LiveWall sets a full-resolution still frame of it as the system desktop picture, which macOS shows on the lock screen.
@@ -155,6 +155,7 @@ Full functionality and redesign, without the icon and docs.
 - Assigned wallpapers were reset on launch.
 - Global mouse monitoring asked for Accessibility access; the cursor is now polled without permissions.
 
+[1.6.2]: https://github.com/Jinjer07/LiveWall/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/Jinjer07/LiveWall/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/Jinjer07/LiveWall/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/Jinjer07/LiveWall/compare/v1.4.1...v1.5.0
