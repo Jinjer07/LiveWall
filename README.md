@@ -44,7 +44,8 @@
 | 📚 **Library** | Tags, favorites, search, multi-select (Cmd/Shift-click, Cmd+A, Cmd+Backspace), per-wallpaper settings, `.wallpkg` packages |
 | ❄️ **Snow** | Snow over the desktop: drifts settle on windows, the cursor sweeps them away, string lights; separate pause settings |
 | ⏱ **Playlists** | Switch on a timer or by time of day; starts right away on launch |
-| 🔋 **Smart pause** | Full-screen apps, covered desktop, another app focused, battery, lock and sleep |
+| 🔋 **Smart pause and FPS** | Pauses for full-screen apps, covered desktop, another app focused, battery, lock and sleep; at rest at most 20 fps, up to your limit on mouse movement and music beats |
+| ⚡️ **Native scenes** | Scenes are drawn on Metal, without a web engine: about 3–4× less CPU than WebKit |
 | 🖼 **Gallery** | Ready-made scenes and shaders from this repository, one-click install |
 | 🌦 **Time of day & weather** | Scenes get darker at night, warmer at sunset and show rain or snow from real weather |
 | 🧭 **Widgets** | CPU, memory, battery, now playing, next calendar event and weather, right on your wallpaper |

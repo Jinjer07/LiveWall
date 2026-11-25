@@ -165,7 +165,7 @@ final class WallpaperEngine: ObservableObject {
             return
         }
         errors[id] = nil
-        let r = RendererFactory.make(item: item) { [weak self] msg in
+        let r = RendererFactory.make(item: item, nativeScenes: settings.nativeScenes) { [weak self] msg in
             self?.errors[id] = msg
         }
         let v = r.view
@@ -181,6 +181,7 @@ final class WallpaperEngine: ObservableObject {
         slot.window.container.addSubview(v)
         slot.window.orderFrontRegardless()
         r.setFPS(settings.fpsLimit)
+        r.setSmartFPS(smartIdle)
         r.applyProperties(item.properties)
         if let a = app?.ambient { r.setAmbient((settings.ambientEnabled ? a : AmbientState()).js) }
         if let i = app?.sysInfo.info, !i.isEmpty { r.setInfo(Self.json(i)) }
@@ -217,10 +218,13 @@ final class WallpaperEngine: ObservableObject {
     // MARK: Пауза, звук, FPS
 
     func applySettings() {
-        for slot in slots.values { slot.renderer?.setFPS(settings.fpsLimit) }
+        for slot in slots.values { slot.renderer?.setFPS(settings.fpsLimit); slot.renderer?.setSmartFPS(smartIdle) }
         applyVolume()
         updatePauseStates()
     }
+
+    /// Частота кадров в покое при умном FPS (0 — выключено).
+    var smartIdle: Int { settings.smartFPS ? min(20, settings.fpsLimit) : 0 }
 
     func applyVolume() {
         let v: Float = settings.muted ? 0 : Float(settings.volume)

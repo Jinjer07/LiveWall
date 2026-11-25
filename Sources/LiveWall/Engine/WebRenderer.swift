@@ -121,6 +121,7 @@ final class WebRenderer: NSObject, WallpaperRenderer, WKNavigationDelegate, WKSc
 
     func setVolume(_ v: Float) { send("volume", "__lwVolume(\(v))") }
     func setFPS(_ fps: Int) { send("fps", "__lwFPS(\(fps))") }
+    func setSmartFPS(_ idle: Int) { send("smart", "__lwSmart(\(idle))") }
     func applyProperties(_ props: [WallpaperProperty]) { send("props", "__lwProps(\(props.jsonForJS))") }
     func setInfo(_ json: String) { send("info", "__lwInfo(\(json))") }
     func setAmbient(_ json: String) { send("ambient", "__lwAmbient(\(json))") }
@@ -142,7 +143,7 @@ final class WebRenderer: NSObject, WallpaperRenderer, WKNavigationDelegate, WKSc
                 guard let self, !self.stopped else { return }
                 self.reloadScheduled = false
                 self.start()
-                for key in ["fps", "volume", "props", "ambient", "info"] { if let sc = self.state[key] { self.js(sc) } }
+                for key in ["fps", "smart", "volume", "props", "ambient", "info"] { if let sc = self.state[key] { self.js(sc) } }
                 self.js("__lwPause(\(self.paused))")
             }
         }

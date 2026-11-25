@@ -198,6 +198,8 @@ struct Playlist: Codable, Identifiable, Hashable {
 
 struct AppSettings: Codable, Equatable {
     var fpsLimit: Int = 15
+    var smartFPS = true                // в покое ≤ 20 кадров/с, при движении мыши и в музыке — до лимита
+    var nativeScenes = true            // сцены рисуются на Metal, а не в WebKit
     var pauseOnFullscreen = true
     var pauseOnMaximized = false
     var pauseWhenCovered = true

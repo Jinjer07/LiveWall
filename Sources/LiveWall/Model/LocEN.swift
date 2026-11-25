@@ -603,5 +603,10 @@ Mac работает от батареи ||| your Mac is on battery
 Обои несколько раз перестали отрисовываться (%@) и были остановлены. Выберите их снова, чтобы перезапустить. ||| This wallpaper stopped rendering several times (%@) and was halted. Choose it again to restart it.
 Те же обои на экране блокировки ||| Same wallpaper on the lock screen
 LiveWall ставит стоп-кадр текущих обоев системной картинкой рабочего стола — её macOS показывает на экране блокировки ||| LiveWall sets a still frame of the current wallpaper as the system desktop picture, which macOS shows on the lock screen
+Умный FPS ||| Smart FPS
+В покое обои рисуются не чаще 20 кадров/с, а при движении мыши и на ударах в музыке — до выбранного лимита ||| When idle, wallpapers draw at most 20 fps; on mouse movement and music beats they go up to the chosen limit
+Сцены на Metal (быстрее) ||| Scenes on Metal (faster)
+Сцены рисуются напрямую на видеокарте, без веб-движка. Выключите, если какая-то сцена выглядит не так, как раньше ||| Scenes are drawn directly on the GPU, without the web engine. Turn this off if a scene looks different than before
+Не удалось загрузить %@ ||| Couldn’t load %@
 """#
 }

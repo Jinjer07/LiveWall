@@ -49,7 +49,7 @@ flowchart LR
 | Image, slideshow | `ImageRenderer` | `CALayer` + `CATransition` |
 | Web | `WebRenderer(.web)` | The user's page plus the bridge |
 | Shader | `WebRenderer(.shader)` | `shader.html`: a Shadertoy wrapper on WebGL 2 |
-| Scene | `WebRenderer(.scene)` | `scene.html`: sprites, particles and text on WebGL 2 |
+| Scene | `MetalSceneRenderer` | Native Metal port of `scene.html`: sprites, particles, CoreText text; falls back to `WebRenderer(.scene)` |
 
 ## Bridge (bridge.js)
 

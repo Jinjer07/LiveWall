@@ -112,6 +112,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     static let showWindowNote = Notification.Name("com.local.livewall.showMainWindow")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if RenderTest.requested { RenderTest.run(); return }
         // Только одна копия LiveWall: вторая (например, автозапуск после восстановления окон)
         // просит первую показать окно и сразу выходит, не трогая состояние и рабочий стол.
         let me = ProcessInfo.processInfo.processIdentifier

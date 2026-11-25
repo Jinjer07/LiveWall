@@ -29,7 +29,15 @@ enum RuntimeFiles {
   });
   var audioCbs = [];
   window.wallpaperRegisterAudioListener = function(cb){ if (typeof cb === 'function') audioCbs.push(cb); };
-  window.__lwAudio = function(a){ lw.audio = a; for (var i=0;i<audioCbs.length;i++){ try{ audioCbs[i](a); }catch(e){} } };
+  // Умный FPS: в покое не чаще lw.idle кадров/с, а на ударах в музыке и при движении мыши — до лимита.
+  lw.idle = 0; var bassAvg = 0;
+  window.__lwSmart = function(n){ lw.idle = n | 0; };
+  function beat(a){
+    var b = 0; for (var i = 0; i < 6; i++) b += ((a[i] || 0) + (a[i + 64] || 0)) * 0.5; b /= 6;
+    if (lw.idle > 0 && b - bassAvg > 0.12) lw.boostUntil = performance.now() + 600;
+    bassAvg += (b - bassAvg) * 0.08;
+  }
+  window.__lwAudio = function(a){ lw.audio = a; beat(a); for (var i=0;i<audioCbs.length;i++){ try{ audioCbs[i](a); }catch(e){} } };
   window.__lwProps = function(p){
     for (var k in p) lw.props[k] = p[k];
     lw.needFrame = 2;
@@ -79,7 +87,8 @@ enum RuntimeFiles {
   function schedule(){
     if (timer !== null) return;
     // Адаптивная частота: пока двигается мышь — до 30 FPS (плавный параллакс), в покое — лимит из настроек.
-    var now = performance.now(), fps = now < (lw.boostUntil || 0) ? Math.max(lw.fps, 30) : lw.fps;
+    var now = performance.now(), boost = now < (lw.boostUntil || 0);
+    var fps = boost ? Math.max(lw.fps, 30) : (lw.idle > 0 ? Math.min(lw.fps, lw.idle) : lw.fps);
     var iv = 1000 / fps;
     var wait = Math.max(0, lastFrame + iv - now);
     timer = setTimeout(tick, (lw.paused && !lw.needFrame) ? 250 : wait);

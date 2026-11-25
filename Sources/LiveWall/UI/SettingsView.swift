@@ -52,6 +52,10 @@ struct SettingsView: View {
                 Picker(tr("Ограничение FPS"), selection: b(\.fpsLimit)) {
                     ForEach([10, 15, 24, 30, 60, 120], id: \.self) { Text($0 == 15 ? tr("15 кадров/с (экономно)") : tr("%@ кадров/с", $0)).tag($0) }
                 }
+                Toggle(tr("Умный FPS"), isOn: b(\.smartFPS))
+                    .help(tr("В покое обои рисуются не чаще 20 кадров/с, а при движении мыши и на ударах в музыке — до выбранного лимита"))
+                Toggle(tr("Сцены на Metal (быстрее)"), isOn: b(\.nativeScenes))
+                    .help(tr("Сцены рисуются напрямую на видеокарте, без веб-движка. Выключите, если какая-то сцена выглядит не так, как раньше"))
                 Toggle(tr("Пауза, когда приложение открыто на весь экран"), isOn: b(\.pauseOnFullscreen))
                 Toggle(tr("Пауза, когда окно развёрнуто почти на весь экран"), isOn: b(\.pauseOnMaximized))
                 Toggle(tr("Пауза, когда рабочий стол закрыт окнами (экономия CPU)"), isOn: b(\.pauseWhenCovered))

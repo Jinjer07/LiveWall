@@ -12,6 +12,7 @@ protocol WallpaperRenderer: AnyObject {
     func setPaused(_ paused: Bool)
     func setVolume(_ volume: Float)
     func setFPS(_ fps: Int)
+    func setSmartFPS(_ idle: Int)
     func applyProperties(_ props: [WallpaperProperty])
     func updateAudio(_ spectrum: [Float])
     func mouse(_ kind: MouseKind, _ p: CGPoint)
@@ -22,6 +23,8 @@ protocol WallpaperRenderer: AnyObject {
 
 extension WallpaperRenderer {
     func setFPS(_ fps: Int) {}
+    /// Умный FPS: в покое не больше idle кадров/с (0 — выключено), при активности — до лимита.
+    func setSmartFPS(_ idle: Int) {}
     func updateAudio(_ spectrum: [Float]) {}
     func mouse(_ kind: MouseKind, _ p: CGPoint) {}
     func setInfo(_ json: String) {}
@@ -30,7 +33,7 @@ extension WallpaperRenderer {
 
 @MainActor
 enum RendererFactory {
-    static func make(item: WallpaperItem, onError: @escaping (String) -> Void) -> WallpaperRenderer {
+    static func make(item: WallpaperItem, nativeScenes: Bool = true, onError: @escaping (String) -> Void) -> WallpaperRenderer {
         let ext = item.entryURL.pathExtension.lowercased()
         let r: WallpaperRenderer
         switch item.type {
@@ -45,7 +48,13 @@ enum RendererFactory {
         case .shader:
             r = WebRenderer(item: item, mode: .shader)
         case .scene:
-            r = WebRenderer(item: item, mode: .scene)
+            // Сцены — на Metal; если Metal недоступен или scene.json не читается, — прежний WebKit-рантайм
+            if nativeScenes, let m = MetalSceneRenderer.make(item: item) {
+                m.onError = onError
+                r = m
+            } else {
+                r = WebRenderer(item: item, mode: .scene)
+            }
         }
         (r as? WebRenderer)?.onError = onError
         return r

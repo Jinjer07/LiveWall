@@ -1,6 +1,6 @@
 import Foundation
 
-/// Документ сцены (scene.json). Рендерится рантаймом scene.html (WebGL2).
+/// Документ сцены (scene.json). На рабочем столе рисуется MetalSceneRenderer, в редакторе — рантаймом scene.html (WebGL2).
 struct SceneDoc: Codable, Equatable {
     var version: Int = 1
     var width: Double = 1920

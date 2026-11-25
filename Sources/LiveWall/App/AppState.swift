@@ -133,7 +133,7 @@ final class AppState: ObservableObject {
         applyRuntimeSettings()
         if old.audioReactive != settings.audioReactive { updateAudioCapture(userInitiated: true) }
         if old.launchAtLogin != settings.launchAtLogin { LoginItem.set(settings.launchAtLogin) }
-        if old.spanMode != settings.spanMode { engine.refresh(force: true) }
+        if old.spanMode != settings.spanMode || old.nativeScenes != settings.nativeScenes { engine.refresh(force: true) }
         if old.language != settings.language {
             Loc.lang = Loc.resolve(settings.language)
             engine.refresh(force: true)   // перезапуск рантаймов с новым языком
