@@ -14,6 +14,10 @@ struct SnowView: View {
             Form {
                 Section {
                     Toggle(tr("Включить снег"), isOn: b(\.snowEnabled))
+                    if let why = app.snow.pauseReason {
+                        Label(tr("Снег сейчас на паузе: %@. Это можно изменить в разделе «Паузы» ниже.", why), systemImage: "pause.circle")
+                            .font(.caption).foregroundStyle(.orange)
+                    }
                     Text(tr("Снег поверх окон не перехватывает клики: рабочий стол и окна остаются доступными."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -60,6 +64,7 @@ struct SnowView: View {
             Toggle(tr("Когда приложение открыто на весь экран"), isOn: b(\.snowPauseOnFullscreen))
             Toggle(tr("Когда окно развёрнуто почти на весь экран"), isOn: b(\.snowPauseOnMaximized))
             Toggle(tr("При блокировке экрана и сне дисплея"), isOn: b(\.snowPauseOnLock))
+            Toggle(tr("При включённом «Уменьшить движение»"), isOn: b(\.snowPauseOnReduceMotion))
         }
     }
 }

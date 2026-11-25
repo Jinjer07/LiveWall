@@ -143,6 +143,7 @@ final class WallpaperEngine: ObservableObject {
 
     /// Перезапускает рендереры с этими обоями (после правки кода/сцены).
     func reload(itemID: String) {
+        app?.lockScreen.invalidate(itemID: itemID)
         for slot in slots.values where slot.itemID == itemID { load(itemID, into: slot) }
         updatePauseStates()
         applyVolume()
@@ -185,6 +186,7 @@ final class WallpaperEngine: ObservableObject {
         if let i = app?.sysInfo.info, !i.isEmpty { r.setInfo(Self.json(i)) }
         r.start()
         slot.renderer = r
+        app?.lockScreen.schedule(screenKey: slot.info.key, itemID: id)
 
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.7

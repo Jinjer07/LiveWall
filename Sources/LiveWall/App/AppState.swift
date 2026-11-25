@@ -19,6 +19,7 @@ final class AppState: ObservableObject {
     let updater = UpdateService()
     let steamAccount = SteamAccount()
     let snow = SnowController()
+    let lockScreen = LockScreenSync()
     var ambient: AmbientState { ambientService.state }
 
     @Published var settings: AppSettings {
@@ -62,6 +63,7 @@ final class AppState: ObservableObject {
         updater.app = self
         steamAccount.app = self
         snow.app = self
+        lockScreen.app = self
         Loc.lang = Loc.resolve(settings.language)
         playlistIndex = st.playlistIndex
         lastPlaylistID = st.lastPlaylistID ?? st.activePlaylistID
@@ -140,6 +142,7 @@ final class AppState: ObservableObject {
         }
         if old.ambientEnabled != settings.ambientEnabled { engine.pushAmbient(ambientService.state) }
         if snowSettingsDiffer(old) { snow.settingsChanged() }
+        if !old.lockScreenSync && settings.lockScreenSync { lockScreen.syncAll() }
         if old.nowPlayingWidgets != settings.nowPlayingWidgets || old.calendarWidgets != settings.calendarWidgets { sysInfo.refresh() }
     }
 
@@ -149,6 +152,7 @@ final class AppState: ObservableObject {
             || o.snowOnWindows != s.snowOnWindows || o.snowCursor != s.snowCursor || o.snowGarlands != s.snowGarlands
             || o.snowPauseOnBattery != s.snowPauseOnBattery || o.snowPauseOnFullscreen != s.snowPauseOnFullscreen
             || o.snowPauseOnMaximized != s.snowPauseOnMaximized || o.snowPauseOnLock != s.snowPauseOnLock
+            || o.snowPauseOnReduceMotion != s.snowPauseOnReduceMotion
     }
 
     @Published var audioNeedsPermission = false

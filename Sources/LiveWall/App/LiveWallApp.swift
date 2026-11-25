@@ -101,6 +101,7 @@ struct MenuBarContent: View {
         }
         Toggle(tr("Звук обоев"), isOn: Binding(get: { !app.settings.muted }, set: { app.settings.muted = !$0 }))
         Toggle(tr("Реакция на звук"), isOn: Binding(get: { app.settings.audioReactive }, set: { app.settings.audioReactive = $0 }))
+        Toggle(tr("Снег"), isOn: Binding(get: { app.settings.snowEnabled }, set: { app.settings.snowEnabled = $0 }))
         Divider()
         Button(tr("Открыть LiveWall…")) { MainWindow.show() }
         Button(tr("Выйти")) { NSApp.terminate(nil) }.keyboardShortcut("q")

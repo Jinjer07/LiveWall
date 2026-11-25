@@ -132,6 +132,8 @@ struct SettingsView: View {
 
             Section(tr("Мониторы")) {
                 Toggle(tr("Растянуть одни обои на все мониторы"), isOn: b(\.spanMode))
+                Toggle(tr("Те же обои на экране блокировки"), isOn: b(\.lockScreenSync))
+                    .help(tr("LiveWall ставит стоп-кадр текущих обоев системной картинкой рабочего стола — её macOS показывает на экране блокировки"))
                 ForEach(engine.screens) { s in
                     LabeledContent(s.name) {
                         Text(library.item(engine.desiredItem(for: s.key))?.title ?? "—").foregroundStyle(.secondary)

@@ -593,5 +593,15 @@ steamcmd установлен ||| steamcmd installed
 Когда окно развёрнуто почти на весь экран ||| When a window is nearly full screen
 Снег поверх окон не перехватывает клики: рабочий стол и окна остаются доступными. ||| Snow does not intercept clicks: your desktop and windows stay usable.
 Stage Manager включён: macOS не сообщает настоящее положение окон, поэтому снег на окнах отключён. Выключите Stage Manager в Пункте управления, чтобы вернуть сугробы. ||| Stage Manager is on: macOS does not report the real window positions, so snow on windows is disabled. Turn Stage Manager off in Control Center to get drifts back.
+включено «Уменьшить движение» в Универсальном доступе ||| Reduce Motion is on in Accessibility
+Mac работает от батареи ||| your Mac is on battery
+экран заблокирован ||| the screen is locked
+открыто полноэкранное приложение ||| a full-screen app is open
+окно развёрнуто почти на весь экран ||| a window is nearly full screen
+Снег сейчас на паузе: %@. Это можно изменить в разделе «Паузы» ниже. ||| Snow is paused right now: %@. You can change this under Pauses below.
+При включённом «Уменьшить движение» ||| When Reduce Motion is on
+Обои несколько раз перестали отрисовываться (%@) и были остановлены. Выберите их снова, чтобы перезапустить. ||| This wallpaper stopped rendering several times (%@) and was halted. Choose it again to restart it.
+Те же обои на экране блокировки ||| Same wallpaper on the lock screen
+LiveWall ставит стоп-кадр текущих обоев системной картинкой рабочего стола — её macOS показывает на экране блокировки ||| LiveWall sets a still frame of the current wallpaper as the system desktop picture, which macOS shows on the lock screen
 """#
 }

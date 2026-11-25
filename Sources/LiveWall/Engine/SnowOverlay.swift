@@ -1,5 +1,6 @@
 import AppKit
 import QuartzCore
+import ImageIO
 
 // MARK: - Настройки снега для рендера
 
@@ -104,9 +105,154 @@ final class SnowCanvas: NSView {
     /// Пока окна двигаются, контроллер опрашивает их чаще, чтобы сугроб не отставал.
     var windowsAreMoving: Bool { CACurrentMediaTime() < movingUntil || piles.values.contains { $0.shed != nil } }
 
-    override var isFlipped: Bool { true }
+    // Вью НЕ перевёрнута: иначе AppKit сам переворачивает её слой, и вместе с нашим переводом
+    // координат снег летел снизу вверх. y из координат симуляции (сверху слева) переводим в одном месте.
+    override var isFlipped: Bool { false }
     override var isOpaque: Bool { false }
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    // Снег собран из слоёв Core Animation: каждая снежинка — слой с общей текстурой, сугробы —
+    // векторные фигуры. Компонует их видеокарта, а процессор только двигает слои. Раньше каждый
+    // кадр заново рисовался весь экран и картинка целиком отправлялась в систему — это стоило
+    // около четверти процессора.
+    private let flakeHost = CALayer()
+    private let pileHost = CALayer()
+    private let garlandLayer = CALayer()
+    private var flakeLayers: [CALayer] = []
+    private var pileLayers: [(fill: CAShapeLayer, edge: CAShapeLayer)] = []
+    private var frameNo = 0
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        // Обычные координаты Core Animation (начало снизу слева); симуляция считает сверху слева,
+        // поэтому y переворачиваем сами — так картинки в слоях гарантированно не вверх ногами.
+        let root = CALayer()
+        layer = root                           // слой задаём до wantsLayer: вью «хостит» свой слой
+        wantsLayer = true
+        root.isGeometryFlipped = false
+        for l in [garlandLayer, pileHost, flakeHost] {
+            l.frame = CGRect(origin: .zero, size: frame.size)
+            l.actions = ["sublayers": NSNull(), "contents": NSNull(), "bounds": NSNull(), "position": NSNull()]
+            root.addSublayer(l)
+        }
+        garlandLayer.contentsGravity = .topLeft
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func layout() {
+        super.layout()
+        layer?.isGeometryFlipped = false
+        for l in [pileHost, flakeHost] { l.frame = bounds }
+    }
+
+    private func renderFrame() {
+        frameNo &+= 1
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        updateFlakeLayers()
+        updatePileLayers()
+        if config.garlands {
+            if frameNo % 3 == 0 || garlandLayer.contents == nil { renderGarlands() }   // мерцание — 10 раз в секунду
+        } else if garlandLayer.contents != nil {
+            garlandLayer.contents = nil
+        }
+        CATransaction.commit()
+        if frameNo == 240, let path = ProcessInfo.processInfo.environment["LW_SNOW_PNG"] { debugSnapshot(path) }
+    }
+
+    /// Отладка: кадр снега поверх тёмного фона в PNG (LW_SNOW_PNG=/путь/файл.png).
+    private func debugSnapshot(_ path: String) {
+        guard let root = layer else { return }
+        let w = Int(bounds.width), h = Int(bounds.height)
+        guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return }
+        ctx.setFillColor(CGColor(red: 0.12, green: 0.14, blue: 0.2, alpha: 1)); ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        // Рамки окон, чтобы было видно, где должны лежать сугробы (в координатах CG: снизу вверх)
+        ctx.setStrokeColor(CGColor(red: 1, green: 0.3, blue: 0.3, alpha: 1)); ctx.setLineWidth(2)
+        for (_, p) in piles where !p.ghost { ctx.stroke(CGRect(x: p.rect.minX, y: CGFloat(h) - p.rect.maxY, width: p.rect.width, height: p.rect.height)) }
+        root.render(in: ctx)
+        // Метка «верх», чтобы ориентация картинки была однозначной
+        ctx.setFillColor(CGColor(red: 0.2, green: 1, blue: 0.3, alpha: 1)); ctx.fill(CGRect(x: 0, y: h - 12, width: 120, height: 12))
+        if let img = ctx.makeImage(), let dest = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL, "public.png" as CFString, 1, nil) {
+            CGImageDestinationAddImage(dest, img, nil); CGImageDestinationFinalize(dest)
+        }
+    }
+
+    private func updateFlakeLayers() {
+        let sprite = Self.softSprite
+        while flakeLayers.count < flakes.count {
+            let l = CALayer()
+            l.contents = sprite
+            l.contentsGravity = .resize
+            l.actions = ["position": NSNull(), "bounds": NSNull(), "opacity": NSNull(), "zPosition": NSNull(), "hidden": NSNull()]
+            flakeHost.addSublayer(l)
+            flakeLayers.append(l)
+        }
+        for (i, f) in flakes.enumerated() {
+            let l = flakeLayers[i]
+            let fade: CGFloat = f.life == .infinity ? 1 : min(1, f.life * 1.5)
+            let d = f.r * 2.5 * (f.depth > 0.88 ? 1.6 : 1)      // самые близкие — крупные размытые «боке»
+            l.isHidden = false
+            l.bounds = CGRect(x: 0, y: 0, width: d, height: d)
+            l.position = CGPoint(x: f.x, y: bounds.height - f.y)
+            l.opacity = Float((0.4 + f.depth * 0.55) * fade * (f.depth > 0.88 ? 0.55 : 1))
+            l.zPosition = f.depth                               // далёкие под ближними, без сортировки
+        }
+        if flakeLayers.count > flakes.count {
+            for l in flakeLayers[flakes.count...] where !l.isHidden { l.isHidden = true }
+        }
+    }
+
+    private func updatePileLayers() {
+        var shapes: [(CGPath, CGPath)] = []
+        if config.onWindows {
+            var flip = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: bounds.height)
+            shapes = pileShapes().compactMap { f, e in
+                guard let ff = f.copy(using: &flip), let ee = e.copy(using: &flip) else { return nil }
+                return (ff, ee)
+            }
+        }
+        while pileLayers.count < shapes.count {
+            let fill = CAShapeLayer(), edge = CAShapeLayer()
+            fill.fillColor = CGColor(red: 0.95, green: 0.97, blue: 1, alpha: 0.97)
+            fill.shadowColor = CGColor(red: 0.55, green: 0.65, blue: 0.85, alpha: 1)
+            fill.shadowOpacity = 0.35; fill.shadowRadius = 1.5; fill.shadowOffset = CGSize(width: 0, height: -1)
+            edge.fillColor = nil
+            edge.strokeColor = CGColor(gray: 1, alpha: 0.9)
+            edge.lineWidth = 1.3; edge.lineJoin = .round; edge.lineCap = .round
+            for l in [fill, edge] {
+                l.actions = ["path": NSNull(), "hidden": NSNull()]
+                pileHost.addSublayer(l)
+            }
+            pileLayers.append((fill, edge))
+        }
+        for (i, pair) in pileLayers.enumerated() {
+            if i < shapes.count {
+                // Фигуру пересчитываем каждый кадр, но отдаём слою, только если она изменилась:
+                // неподвижный сугроб не перерисовывается
+                if pair.fill.path != shapes[i].0 { pair.fill.path = shapes[i].0 }
+                if pair.edge.path != shapes[i].1 { pair.edge.path = shapes[i].1 }
+                pair.fill.isHidden = false; pair.edge.isHidden = false
+            } else if !pair.fill.isHidden {
+                pair.fill.isHidden = true; pair.edge.isHidden = true
+                pair.fill.path = nil; pair.edge.path = nil
+            }
+        }
+    }
+
+    private func renderGarlands() {
+        let w = Int(bounds.width.rounded()), h = Int(menuBarHeight + 48)
+        guard w > 0, h > 0,
+              let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+        else { return }
+        ctx.translateBy(x: 0, y: CGFloat(h)); ctx.scaleBy(x: 1, y: -1)
+        drawGarlands(ctx)
+        garlandLayer.frame = CGRect(x: 0, y: bounds.height - CGFloat(h), width: CGFloat(w), height: CGFloat(h))
+        garlandLayer.contents = ctx.makeImage()
+    }
 
     // MARK: Жизненный цикл
 
@@ -125,7 +271,7 @@ final class SnowCanvas: NSView {
     private func configChanged() {
         link?.preferredFrameRateRange = CAFrameRateRange(minimum: 15, maximum: 30, preferred: config.lowPower ? 20 : 30)
         if !config.onWindows { piles.removeAll(); surfaces.removeAll() }
-        needsDisplay = true
+        renderFrame()
     }
 
     // MARK: Окна
@@ -206,7 +352,7 @@ final class SnowCanvas: NSView {
     @objc private func tick(_ link: CADisplayLink) {
         let dt = CGFloat(min(0.1, max(0.001, link.targetTimestamp - link.timestamp)))
         step(dt)
-        needsDisplay = true
+        renderFrame()
     }
 
     private var targetCount: Int {
@@ -291,7 +437,9 @@ final class SnowCanvas: NSView {
             guard var sh = p.shed else { piles[id] = nil; continue }
             sh.t += dt
             let n = p.h.count
-            let reach = Int(sh.t * 520 / Self.colW) + 2          // волна бежит ~520 пт/с
+            // Волна бежит ~2400 пт/с: сугроб закрытого окна осыпается за полсекунды, а не висит
+            // в воздухе белой полосой несколько секунд
+            let reach = Int(sh.t * 2400 / Self.colW) + 2
             var any = false
             for k in 0..<n {
                 let c = sh.dir < 0 ? k : n - 1 - k
@@ -395,13 +543,6 @@ final class SnowCanvas: NSView {
 
     // MARK: Рисование
 
-    override func draw(_ dirtyRect: NSRect) {
-        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-        ctx.clear(bounds)
-        if config.garlands { drawGarlands(ctx) }
-        drawPiles(ctx)
-        drawFlakes(ctx)
-    }
 
     // Заранее нарисованные спрайты: мягкий диск (боке) и шестилучевой кристалл
     private static let softSprite: CGImage? = makeSprite(size: 64) { ctx, c in
@@ -418,24 +559,9 @@ final class SnowCanvas: NSView {
         return ctx.makeImage()
     }
 
-    private func drawFlakes(_ ctx: CGContext) {
-        guard let soft = Self.softSprite else { return }
-        // Далёкие рисуем первыми — ближние перекрывают их. Все снежинки — мягкие круглые, без «стружки».
-        for f in flakes.sorted(by: { $0.depth < $1.depth }) {
-            let fade: CGFloat = f.life == .infinity ? 1 : min(1, f.life * 1.5)
-            let d = f.r * 2.5 * (f.depth > 0.88 ? 1.6 : 1)      // самые близкие — крупные размытые «боке»
-            ctx.setAlpha((0.4 + f.depth * 0.55) * fade * (f.depth > 0.88 ? 0.55 : 1))
-            ctx.draw(soft, in: CGRect(x: f.x - d / 2, y: f.y - d / 2, width: d, height: d))
-        }
-        ctx.setAlpha(1)
-    }
-
-    private func drawPiles(_ ctx: CGContext) {
-        guard config.onWindows else { return }
-        let space = CGColorSpaceCreateDeviceRGB()
-        let grad = CGGradient(colorsSpace: space, colors: [
-            CGColor(red: 1, green: 1, blue: 1, alpha: 0.98), CGColor(red: 0.86, green: 0.92, blue: 1, alpha: 0.96)] as CFArray,
-            locations: [0, 1])!
+    /// Контуры сугробов: заливка и блик по гребню для каждого видимого участка края окна.
+    private func pileShapes() -> [(CGPath, CGPath)] {
+        var out: [(CGPath, CGPath)] = []
         for s in surfaces {
             guard let h = piles[s.id]?.h, !h.isEmpty else { continue }
             let c0 = max(0, Int((s.x0 - s.winX) / Self.colW)), c1 = min(h.count - 1, Int((s.x1 - s.winX) / Self.colW))
@@ -450,33 +576,20 @@ final class SnowCanvas: NSView {
                 let xx = s.winX + (CGFloat(col) + 0.5) * Self.colW
                 let toEnd = min(xx - s.x0 + 10, s.x1 - xx + 10)          // у краёв окна сугроб сходит на нет
                 let taper = min(1, max(0.12, toEnd / 30))
-                let pt = CGPoint(x: xx, y: s.y - (a + 2 * b + 3 * m + 2 * d + e) / 9 * (taper * taper * (3 - 2 * taper)) - ripple)
+                let y = s.y - (a + 2 * b + 3 * m + 2 * d + e) / 9 * (taper * taper * (3 - 2 * taper)) - ripple
+                // Округление до полупикселя: дрожь в сотых долях не заставляет слой перерисовываться
+                let pt = CGPoint(x: xx, y: (y * 2).rounded() / 2)
                 p.addLine(to: pt)
                 // Блик только там, где реально лежит снег
                 if s.y - pt.y > 0.5 { if drawingEdge { edge.addLine(to: pt) } else { edge.move(to: pt); drawingEdge = true } } else { drawingEdge = false }
             }
             p.addLine(to: CGPoint(x: s.winX + CGFloat(c1) * Self.colW, y: s.y + 0.5))
             p.closeSubpath()
-            ctx.saveGState()
-            ctx.addPath(p); ctx.clip()
-            ctx.drawLinearGradient(grad, start: CGPoint(x: 0, y: s.y - Self.maxPile - 4), end: CGPoint(x: 0, y: s.y + 1), options: [])
-            ctx.restoreGState()
-            // Блик на гребне и мягкая тень, чтобы сугроб казался объёмным
-            ctx.setLineJoin(.round); ctx.setLineCap(.round)
-            ctx.setStrokeColor(CGColor(gray: 1, alpha: 0.9)); ctx.setLineWidth(1.3)
-            ctx.addPath(edge); ctx.strokePath()
-            // Редкие искорки на снегу
-            let t = time * 2.4
-            for k in 0..<3 {
-                let col = c0 + Int(abs(sin(CGFloat(k) * 12.9898 + CGFloat(Int(t / 2) + s.id) * 78.233)) * CGFloat(c1 - c0))
-                guard col < h.count, h[col] > 2 else { continue }
-                let tw = max(0, sin(t * 1.3 + CGFloat(k) * 2.1))
-                let x = s.winX + (CGFloat(col) + 0.5) * Self.colW, y = s.y - h[col]
-                ctx.setFillColor(CGColor(gray: 1, alpha: tw))
-                ctx.fill(CGRect(x: x - 0.6, y: y - 3 * tw, width: 1.2, height: 6 * tw))
-                ctx.fill(CGRect(x: x - 3 * tw, y: y - 0.6, width: 6 * tw, height: 1.2))
-            }
+            // У осыпающегося сугроба (окно закрыто или сдвинуто) блика на гребне нет:
+            // тонкая белая линия без окна под ней выглядела как артефакт
+            out.append((p, s.landable ? edge : CGMutablePath()))
         }
+        return out
     }
 
     private static let bulbColors: [CGColor] = [
@@ -569,7 +682,15 @@ final class SnowController {
 
     private var enabled: Bool { app?.settings.snowEnabled ?? false }
 
+    private var motionObserver: NSObjectProtocol?
+
     func start() {
+        if motionObserver == nil {
+            motionObserver = NSWorkspace.shared.notificationCenter.addObserver(
+                forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.updatePause() }
+            }
+        }
         if screenObserver == nil {
             screenObserver = NotificationCenter.default.addObserver(
                 forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
@@ -580,6 +701,7 @@ final class SnowController {
     }
 
     func shutdown() {
+        pauseReason = nil
         scanTimer?.invalidate(); scanTimer = nil
         overlays.values.forEach { $0.close() }
         overlays = [:]
@@ -644,20 +766,36 @@ final class SnowController {
 
     /// Паузы снега не зависят от пауз обоев: у каждого свои переключатели в настройках.
     func updatePause() {
-        guard let app, enabled else { return }
+        guard let app, enabled else { pauseReason = nil; return }
         let s = app.settings, m = app.monitor
-        let reduce = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        let global = reduce
-            || (s.snowPauseOnBattery && m.onBattery)
-            || (s.snowPauseOnLock && (m.isLocked || m.isAsleep))
+        // Раньше «Уменьшить движение» выключало снег всегда и молча — теперь только по настройке.
+        var global: String?
+        if s.snowPauseOnReduceMotion && NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            global = tr("включено «Уменьшить движение» в Универсальном доступе")
+        } else if s.snowPauseOnBattery && m.onBattery {
+            global = tr("Mac работает от батареи")
+        } else if s.snowPauseOnLock && (m.isLocked || m.isAsleep) {
+            global = tr("экран заблокирован")
+        }
         var now = Set<String>()
+        var reason = global
         for (k, o) in overlays {
-            let p = global
-                || (s.snowPauseOnFullscreen && m.fullscreenScreens.contains(k))
-                || (s.snowPauseOnMaximized && m.maximizedScreens.contains(k))
+            var p = global != nil
+            if !p && s.snowPauseOnFullscreen && m.fullscreenScreens.contains(k) { p = true; reason = reason ?? tr("открыто полноэкранное приложение") }
+            if !p && s.snowPauseOnMaximized && m.maximizedScreens.contains(k) { p = true; reason = reason ?? tr("окно развёрнуто почти на весь экран") }
             if p { now.insert(k) }
             if p { o.hide() } else { o.show() }
         }
+        if ProcessInfo.processInfo.environment["LW_DEBUG"] != nil, now != paused {
+            NSLog("LW snow paused=%@ reason=%@ full=%@ max=%@", now.isEmpty ? "no" : "yes", reason ?? "-",
+                  m.fullscreenScreens.joined(separator: ","), m.maximizedScreens.joined(separator: ","))
+        }
         paused = now
+        pauseReason = now.isEmpty ? nil : reason
+        if pauseReason != oldReason { oldReason = pauseReason; app.objectWillChange.send() }
     }
+
+    /// Почему снег сейчас не виден (для вкладки «Снег»); nil — снег идёт.
+    private(set) var pauseReason: String?
+    private var oldReason: String?
 }

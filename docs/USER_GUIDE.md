@@ -42,7 +42,7 @@ The **Snow** tab puts snow over your desktop and windows. It's off by default.
 - **The cursor pushes snow and sweeps drifts away.**
 - **String lights under the menu bar.**
 - **Clear drifts** removes all settled snow.
-- **Pause settings** for snow are separate from the wallpaper ones: battery, full-screen app, maximized window, lock and sleep. Snow also stops under Reduce Motion and uses half the flakes in Low Power Mode.
+- **Pause settings** for snow are separate from the wallpaper ones: battery, full-screen app, maximized window, lock and sleep. Pausing under Reduce Motion is a separate switch, off by default. In Low Power Mode snow uses half the flakes. When snow is paused, the Snow tab says why. Snow can also be turned on and off from the menu bar menu.
 
 The snow layer never catches clicks: the desktop and windows underneath work as usual. It is drawn by the CPU, so it adds some load while it's on.
 
@@ -97,7 +97,7 @@ Video and web wallpapers are imported as is, scenes through the converter (origi
 | Wallpaper sound | Volume, mute (sound only from the main display) |
 | Audio visualization | Reaction to system audio |
 | Interactivity | Mouse parallax, desktop clicks |
-| Displays | Stretch one wallpaper across all displays |
+| Displays | Stretch one wallpaper across all displays; same wallpaper on the lock screen (a still frame becomes the system desktop picture) |
 | System | Launch at login, data folder, samples |
 
 ## Where data is stored

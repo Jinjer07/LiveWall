@@ -240,6 +240,9 @@ struct AppSettings: Codable, Equatable {
     var snowPauseOnFullscreen = true
     var snowPauseOnMaximized = false
     var snowPauseOnLock = true
+    var snowPauseOnReduceMotion = false // «Уменьшить движение» в Универсальном доступе
+    // Экран блокировки показывает стоп-кадр текущих обоев (системная картинка рабочего стола)
+    var lockScreenSync = true
 }
 
 struct PersistedState: Codable {

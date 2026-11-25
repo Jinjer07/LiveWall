@@ -51,6 +51,11 @@ final class WebRenderer: NSObject, WallpaperRenderer, WKNavigationDelegate, WKSc
     private var pending: [String] = []
     private var paused = false
     private var stopped = false
+    // Последние отправленные значения: после перезапуска процесса WebKit или потери
+    // WebGL-контекста их нужно отправить заново, иначе обои теряют настройки и FPS.
+    private var state: [String: String] = [:]
+    private var reloadScheduled = false
+    private var reloads: [Date] = []
 
     init(item: WallpaperItem, mode: Mode) {
         self.item = item
@@ -112,11 +117,36 @@ final class WebRenderer: NSObject, WallpaperRenderer, WKNavigationDelegate, WKSc
         js("__lwPause(\(p))")
     }
 
-    func setVolume(_ v: Float) { js("__lwVolume(\(v))") }
-    func setFPS(_ fps: Int) { js("__lwFPS(\(fps))") }
-    func applyProperties(_ props: [WallpaperProperty]) { js("__lwProps(\(props.jsonForJS))") }
-    func setInfo(_ json: String) { js("__lwInfo(\(json))") }
-    func setAmbient(_ json: String) { js("__lwAmbient(\(json))") }
+    private func send(_ key: String, _ script: String) { state[key] = script; js(script) }
+
+    func setVolume(_ v: Float) { send("volume", "__lwVolume(\(v))") }
+    func setFPS(_ fps: Int) { send("fps", "__lwFPS(\(fps))") }
+    func applyProperties(_ props: [WallpaperProperty]) { send("props", "__lwProps(\(props.jsonForJS))") }
+    func setInfo(_ json: String) { send("info", "__lwInfo(\(json))") }
+    func setAmbient(_ json: String) { send("ambient", "__lwAmbient(\(json))") }
+
+    /// Перезагружает страницу и заново отправляет всё состояние. Не чаще 5 раз за 5 минут,
+    /// чтобы сломанные обои не перезапускались по кругу.
+    private func recover(_ why: String) {
+        guard !stopped, !reloadScheduled else { return }
+        reloads = reloads.filter { $0.timeIntervalSinceNow > -300 }
+        if ProcessInfo.processInfo.environment["LW_DEBUG"] != nil { NSLog("LW web recover (%@): %@", why, item.title) }
+        guard reloads.count < 5 else {
+            onError?(tr("Обои несколько раз перестали отрисовываться (%@) и были остановлены. Выберите их снова, чтобы перезапустить.", why))
+            return
+        }
+        reloads.append(Date())
+        reloadScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, !self.stopped else { return }
+                self.reloadScheduled = false
+                self.start()
+                for key in ["fps", "volume", "props", "ambient", "info"] { if let sc = self.state[key] { self.js(sc) } }
+                self.js("__lwPause(\(self.paused))")
+            }
+        }
+    }
 
     func updateAudio(_ s: [Float]) {
         guard loaded, !paused, !stopped else { return }
@@ -163,9 +193,8 @@ final class WebRenderer: NSObject, WallpaperRenderer, WKNavigationDelegate, WKSc
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        guard !stopped else { return }
-        start()
-        js("__lwPause(\(paused))")
+        loaded = false
+        recover("WebContent")
     }
 
     // MARK: Сообщения из JS
@@ -173,6 +202,7 @@ final class WebRenderer: NSObject, WallpaperRenderer, WKNavigationDelegate, WKSc
     func userContentController(_ c: WKUserContentController, didReceive m: WKScriptMessage) {
         guard let body = m.body as? [String: Any], let type = body["type"] as? String else { return }
         if type == "error", let msg = body["message"] as? String { onError?(msg) }
+        if type == "contextlost" { recover("WebGL") }
     }
 }
 

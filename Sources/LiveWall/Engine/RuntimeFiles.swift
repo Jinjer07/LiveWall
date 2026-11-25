@@ -21,6 +21,9 @@ enum RuntimeFiles {
   window.__lwAmbient = function(a){ lw.ambient = a || lw.ambient; lw.needFrame = 2; try{ window.dispatchEvent(new CustomEvent('lw-ambient', {detail:lw.ambient})); }catch(e){} };
   function post(m){ try{ window.webkit.messageHandlers.lw.postMessage(m); }catch(e){} }
   window.__lwPost = post;
+  // WebGL-контекст может пропасть (нехватка видеопамяти, сброс GPU): тогда холст навсегда
+  // остаётся чёрным. Сообщаем приложению — оно перезагрузит обои и восстановит настройки.
+  window.addEventListener('webglcontextlost', function(e){ post({type:'contextlost'}); }, true);
   window.addEventListener('error', function(e){
     post({type:'error', message: String(e.message||e) + (e.filename ? (' @ ' + String(e.filename).split('/').pop() + ':' + e.lineno) : '')});
   });

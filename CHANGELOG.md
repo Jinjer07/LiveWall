@@ -2,6 +2,19 @@
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Same wallpaper on the lock screen** (Settings → Displays, on by default). A few seconds after a wallpaper changes, LiveWall sets a full-resolution still frame of it as the system desktop picture, which macOS shows on the lock screen.
+- **Snow toggle in the menu bar menu.**
+- The Snow tab says why snow is paused right now, and Reduce Motion is now its own pause setting.
+
+### Fixed
+- **Snow didn't show at all with Reduce Motion on:** it was silently stopped. Reduce Motion now pauses snow only if you turn that setting on.
+- **Snow used about a quarter of the CPU:** the whole screen was redrawn and sent to the system every frame. Flakes and drifts are now Core Animation layers composited by the GPU; snow costs about 1–2% CPU.
+- **A white strip stayed for seconds after closing a window:** its drift now collapses in about half a second, without the highlight line.
+- **Wallpapers went blank when WebKit restarted or lost its WebGL context** (for example under memory pressure): they now reload by themselves with their FPS, settings and volume, up to 5 times in 5 minutes.
+
 ## [1.6.1] — 2026-11-24
 
 Snow polish by [@Nanda070](https://github.com/Nanda070) in [#2](https://github.com/Jinjer07/LiveWall/pull/2).
