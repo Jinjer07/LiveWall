@@ -48,6 +48,11 @@ struct SettingsView: View {
                 .pickerStyle(.segmented)
             }
 
+            Section(tr("Оформление")) {
+                Toggle(tr("Новогоднее оформление"), isOn: b(\.festiveTheme))
+                    .help(tr("Алый и белый, как леденец, мерцающие гирлянды и украшения"))
+            }
+
             Section(tr("Производительность")) {
                 Picker(tr("Ограничение FPS"), selection: b(\.fpsLimit)) {
                     ForEach([10, 15, 24, 30, 60, 120], id: \.self) { Text($0 == 15 ? tr("15 кадров/с (экономно)") : tr("%@ кадров/с", $0)).tag($0) }

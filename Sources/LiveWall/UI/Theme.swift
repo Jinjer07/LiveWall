@@ -10,10 +10,18 @@ enum Theme {
     static let stroke = Color.white.opacity(0.07)
     static let strokeHi = Color.white.opacity(0.14)
 
-    static let crimson = Color(red: 0.863, green: 0.078, blue: 0.235)   // #DC143C
-    static let scarlet = Color(red: 1.000, green: 0.200, blue: 0.250)   // #FF3340
-    static let blood = Color(red: 0.520, green: 0.030, blue: 0.110)     // #85081C
-    static let ember = Color(red: 1.000, green: 0.420, blue: 0.260)     // #FF6B42
+    /// Новогоднее оформление: цвета леденца (алый и белый), гирлянды, леденцы-украшения.
+    nonisolated(unsafe) static var festive = true
+
+    // Алые цвета; в новогоднем оформлении — ярче, «леденцовые»
+    static var crimson: Color { festive ? candyRed : Color(red: 0.863, green: 0.078, blue: 0.235) }    // #DC143C
+    static var scarlet: Color { festive ? Color(red: 1.0, green: 0.25, blue: 0.32) : Color(red: 1.000, green: 0.200, blue: 0.250) }
+    static var blood: Color { festive ? Color(red: 0.66, green: 0.0, blue: 0.10) : Color(red: 0.520, green: 0.030, blue: 0.110) }
+    // Тёплый акцент: обычно оранжевый «уголёк», на праздники — белый, как полоски леденца
+    static var ember: Color { festive ? snow : Color(red: 1.000, green: 0.420, blue: 0.260) }
+
+    static let candyRed = Color(red: 0.93, green: 0.05, blue: 0.16)     // #ED0D29
+    static let snow = Color(red: 1.0, green: 0.97, blue: 0.96)
 
     static let text = Color(red: 0.95, green: 0.95, blue: 0.96)
     static let text2 = Color(red: 0.62, green: 0.62, blue: 0.66)
@@ -120,6 +128,7 @@ private struct CrimsonButtonBody: View {
             .padding(.vertical, large ? 11 : 7)
             .background(
                 Capsule().fill(Theme.redGradient)
+                    .candyOverlay(Capsule(), opacity: hover ? 0.24 : 0.16, stripe: large ? 9 : 7)
                     .overlay(Capsule().fill(Color.white.opacity(hover ? 0.10 : 0)))
             )
             .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1))
@@ -197,8 +206,9 @@ struct PageHeader<Trailing: View>: View {
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(Theme.text)
                 HStack(spacing: 10) {
-                    Capsule().fill(Theme.redHGradient)
-                        .frame(width: lineIn ? 42 : 0, height: 3)
+                    Capsule().fill(Theme.festive ? AnyShapeStyle(Theme.candyRed) : AnyShapeStyle(Theme.redHGradient))
+                        .candyOverlay(Capsule(), opacity: 1, stripe: 4)
+                        .frame(width: lineIn ? (Theme.festive ? 64 : 42) : 0, height: Theme.festive ? 5 : 3)
                         .crimsonGlow(6, opacity: 0.8)
                     if let subtitle {
                         Text(subtitle).font(.system(size: 12)).foregroundStyle(Theme.text2)

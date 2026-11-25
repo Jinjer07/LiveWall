@@ -608,5 +608,9 @@ LiveWall ставит стоп-кадр текущих обоев системн
 Сцены на Metal (быстрее) ||| Scenes on Metal (faster)
 Сцены рисуются напрямую на видеокарте, без веб-движка. Выключите, если какая-то сцена выглядит не так, как раньше ||| Scenes are drawn directly on the GPU, without the web engine. Turn this off if a scene looks different than before
 Не удалось загрузить %@ ||| Couldn’t load %@
+с Новым годом! ||| happy holidays!
+Оформление ||| Appearance
+Новогоднее оформление ||| Holiday theme
+Алый и белый, как леденец, мерцающие гирлянды и украшения ||| Candy-cane red and white, twinkling garlands and ornaments
 """#
 }

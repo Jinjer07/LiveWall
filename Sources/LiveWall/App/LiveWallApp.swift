@@ -128,6 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         AppState.shared.bootstrap()
+        if let path = ProcessInfo.processInfo.environment["LW_UI_SNAPSHOT"] { UISnapshot.run(path) }
 
         func isMainWindow(_ w: NSWindow) -> Bool {
             !(w is DesktopWindow) && w.styleMask.contains(.titled)

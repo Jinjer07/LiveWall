@@ -15,7 +15,7 @@ struct RootView: View {
             Theme.bg.ignoresSafeArea()
             // Когда окно закрыто, свёрнуто или полностью перекрыто — интерфейс выгружается,
             // чтобы анимации SwiftUI не тратили CPU и не будили WindowServer.
-            if windowVisible { content.id(app.settings.language) }
+            if windowVisible { content.id("\(app.settings.language)-\(app.settings.festiveTheme)") }
         }
         .background(WindowVisibilityReader(visible: $windowVisible))
     }
@@ -132,15 +132,19 @@ struct MainView: View {
             Sidebar()
                 .frame(width: 200)
             Rectangle().fill(Theme.stroke).frame(width: 1)
-            ZStack {
+            ZStack(alignment: .top) {
                 Theme.bg2
                 VStack(spacing: 0) {
+                    if Theme.festive { Color.clear.frame(height: 14) }   // место под гирлянду
                     UpdateBanner()
                     content
                     .id(app.sidebar ?? .library)
                     .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 12)),
                                             removal: .identity))
                 }
+            }
+            .overlay(alignment: .top) {
+                if Theme.festive { Garland(sag: 12).frame(height: 30) }
             }
             .animation(Theme.spring, value: app.sidebar)
         }
@@ -194,7 +198,14 @@ struct Sidebar: View {
                     LogoMark(size: 30)
                     VStack(alignment: .leading, spacing: 0) {
                         Text("LiveWall").font(.system(size: 15, weight: .heavy)).foregroundStyle(Theme.text)
-                        Text(tr("живые обои")).font(.system(size: 11)).foregroundStyle(Theme.text3)
+                            .lineLimit(1).fixedSize()
+                        Text(Theme.festive ? tr("с Новым годом!") : tr("живые обои")).font(.system(size: 11))
+                            .foregroundStyle(Theme.festive ? Theme.scarlet : Theme.text3)
+                            .lineLimit(1).fixedSize()
+                    }
+                    if Theme.festive {
+                        Spacer(minLength: 0)
+                        CandyCaneOrnament().scaleEffect(0.8).frame(width: 27, height: 30)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -268,6 +279,7 @@ private struct SidebarRow: View {
                 if selected {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(Theme.redGradient)
+                        .candyOverlay(RoundedRectangle(cornerRadius: 10, style: .continuous), opacity: 0.14, stripe: 6)
                         .matchedGeometryEffect(id: "sel", in: ns)
                         .shadow(color: Theme.crimson.opacity(0.55), radius: 12, y: 3)
                 } else if hover {

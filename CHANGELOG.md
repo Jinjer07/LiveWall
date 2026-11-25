@@ -4,6 +4,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- **Holiday theme** (Settings → Appearance, on by default): candy-cane red and white palette, candy stripes on the selected sidebar item, primary buttons and page headers, a twinkling garland of red and white bulbs along the top of the window, and crossed candy canes with holly next to the logo. The twinkling runs on Core Animation, so it doesn't redraw the interface.
+
 ### Performance
 - **Scenes render natively on Metal** instead of WebKit (Settings → Performance → “Scenes on Metal”, on by default). The same layers, parallax, particles, text and widgets, waves, glow, color grading, blend modes and weather tinting, drawn straight into a `CAMetalLayer` without a WebKit process or the JavaScript bridge. On a 4K Wallpaper Engine scene at 60 FPS the load dropped from about 20% to 4–6% CPU. Shaders and web wallpapers still use WebKit; the scene editor too. If Metal is unavailable or a scene can't be read, LiveWall falls back to WebKit by itself.
 - **Smart FPS** (on by default): when nothing happens, wallpapers draw at most 20 fps; on mouse movement and music beats they go up to your FPS limit for a moment. With a 60 FPS limit a Metal scene uses about 1.6% CPU at rest.

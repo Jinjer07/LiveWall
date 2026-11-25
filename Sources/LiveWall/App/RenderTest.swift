@@ -1,3 +1,5 @@
+import SwiftUI
+import ImageIO
 import AppKit
 
 /// Отладка: рисует сцены обоими движками (Metal и WebKit) в невидимом окне и сохраняет кадры,
@@ -61,6 +63,49 @@ enum RenderTest {
                         next(Array(jobs.dropFirst()), out: out)
                     }
                 }
+            }
+        }
+    }
+}
+
+/// Отладка: рисует главный экран в PNG без окна (LW_UI_SNAPSHOT=/путь.png, LW_UI_TAB=library|settings|…) и выходит.
+/// Интерфейс рисует ImageRenderer, гирлянду (слои Core Animation) — отдельно, поверх.
+@MainActor
+enum UISnapshot {
+    static func run(_ path: String) {
+        let app = AppState.shared
+        if let tab = ProcessInfo.processInfo.environment["LW_UI_TAB"], let item = SidebarItem(rawValue: tab) { app.sidebar = item }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {     // превью библиотеки успевают загрузиться
+            MainActor.assumeIsolated {
+                let size = CGSize(width: 1280, height: 800)
+                let view = MainView()
+                    .environmentObject(app).environmentObject(app.library).environmentObject(app.engine).environmentObject(app.steam)
+                    .frame(width: size.width, height: size.height)
+                    .preferredColorScheme(.dark)
+                let r = SwiftUI.ImageRenderer(content: view)
+                r.scale = 2
+                guard let ui = r.cgImage,
+                      let ctx = CGContext(data: nil, width: ui.width, height: ui.height, bitsPerComponent: 8, bytesPerRow: 0,
+                                          space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+                else { NSLog("LW ui snapshot failed"); exit(1) }
+                ctx.draw(ui, in: CGRect(x: 0, y: 0, width: ui.width, height: ui.height))
+                if Theme.festive {
+                    // Гирлянда над контентом: справа от сайдбара (200 pt + линия), высота 30 pt
+                    let g = GarlandNSView(sag: 12)
+                    g.frame = CGRect(x: 0, y: 0, width: size.width - 201, height: 30)
+                    g.layout()
+                    ctx.saveGState()
+                    ctx.scaleBy(x: 2, y: 2)
+                    ctx.translateBy(x: 201, y: size.height)
+                    ctx.scaleBy(x: 1, y: -1)      // гирлянда считает сверху вниз
+                    g.layer?.render(in: ctx)
+                    ctx.restoreGState()
+                }
+                if let img = ctx.makeImage(), let dest = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL, "public.png" as CFString, 1, nil) {
+                    CGImageDestinationAddImage(dest, img, nil); CGImageDestinationFinalize(dest)
+                }
+                NSLog("LW ui snapshot written")
+                exit(0)
             }
         }
     }

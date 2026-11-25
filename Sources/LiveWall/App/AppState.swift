@@ -65,6 +65,7 @@ final class AppState: ObservableObject {
         snow.app = self
         lockScreen.app = self
         Loc.lang = Loc.resolve(settings.language)
+        Theme.festive = settings.festiveTheme
         playlistIndex = st.playlistIndex
         lastPlaylistID = st.lastPlaylistID ?? st.activePlaylistID
         playlists = st.playlists
@@ -130,6 +131,7 @@ final class AppState: ObservableObject {
     }
 
     private func settingsChanged(old: AppSettings) {
+        Theme.festive = settings.festiveTheme
         applyRuntimeSettings()
         if old.audioReactive != settings.audioReactive { updateAudioCapture(userInitiated: true) }
         if old.launchAtLogin != settings.launchAtLogin { LoginItem.set(settings.launchAtLogin) }
