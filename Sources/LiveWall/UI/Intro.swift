@@ -207,8 +207,7 @@ struct CreditsView: View {
 
     private let blocks: [(String, [String])] = [
         (tr("В главной роли"), ["LiveWall"]),
-        (tr("Идея и продюсирование"), [tr("Вы — владелец этого Mac")]),
-        (tr("Код, дизайн и анимации"), ["Claude · Anthropic"]),
+        (tr("Идея и продюсирование"), ["Nijat Afandiyev"]),
         (tr("Движок рабочего стола"), [tr("AppKit · NSWindow на уровне рабочего стола")]),
         (tr("Рендеринг"), ["WebKit · WebGL 2", "AVFoundation", "Core Animation"]),
         (tr("Звук"), ["ScreenCaptureKit", "Accelerate · vDSP FFT"]),
@@ -283,7 +282,7 @@ struct CreditsView: View {
             withTransaction(t) { offset = h * 0.5 + contentHeight * 0.5 + 40 }
             let distance = h + contentHeight + 80
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                withAnimation(.linear(duration: Double(distance) / 55)) {
+                withAnimation(.linear(duration: Double(distance) / 110)) {   // 110 pt/с
                     offset = -(h * 0.5 + contentHeight * 0.5 + 40)
                 }
             }

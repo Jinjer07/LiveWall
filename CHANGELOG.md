@@ -2,6 +2,14 @@
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [SemVer](https://semver.org/).
 
+## [1.7.2] — 2026-11-25
+
+### Fixed
+- **“Pause all wallpapers” really survives a restart now.** While starting, LiveWall briefly wrote “pause off” to disk before restoring the saved value, and a second copy launched at the same moment (login, restart, reopening the app) could read that and keep it. LiveWall now only reads its state until startup is complete, and extra copies never write anything.
+
+### Changed
+- Credits scroll twice as fast and name Nijat Afandiyev for idea and production.
+
 ## [1.7.1] — 2026-11-25
 
 ### Fixed
@@ -174,6 +182,7 @@ Full functionality and redesign, without the icon and docs.
 - Assigned wallpapers were reset on launch.
 - Global mouse monitoring asked for Accessibility access; the cursor is now polled without permissions.
 
+[1.7.2]: https://github.com/Jinjer07/LiveWall/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/Jinjer07/LiveWall/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/Jinjer07/LiveWall/compare/v1.6.2...v1.7.0
 [1.6.2]: https://github.com/Jinjer07/LiveWall/compare/v1.6.1...v1.6.2

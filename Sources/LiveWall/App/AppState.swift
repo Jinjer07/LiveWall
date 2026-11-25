@@ -119,6 +119,11 @@ final class AppState: ObservableObject {
     }
 
     func saveState() {
+        // До запуска (bootstrap) состояние только читается. Иначе при загрузке на диск на миг попадало
+        // «пауза выключена» (didSet плейлистов срабатывает раньше, чем восстановлена пауза), и вторая копия
+        // LiveWall, запущенная одновременно (вход в систему, перезапуск), читала этот промежуточный «false».
+        // Лишние копии до bootstrap не доходят — и ничего не перезаписывают.
+        guard bootstrapped else { return }
         let st = PersistedState(assignments: engine.assignments, spanItemID: engine.spanItemID,
                                 activePlaylistID: activePlaylistID, playlists: playlists, playlistIndex: playlistIndex,
                                 lastPlaylistID: lastPlaylistID, userPaused: engine.userPaused)

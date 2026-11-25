@@ -301,8 +301,6 @@ LiveWall не собирает персональные данные. Разре
 Принять ||| Accept
 В главной роли ||| Starring
 Идея и продюсирование ||| Idea and production
-Вы — владелец этого Mac ||| You — the owner of this Mac
-Код, дизайн и анимации ||| Code, design and animation
 Движок рабочего стола ||| Desktop engine
 AppKit · NSWindow на уровне рабочего стола ||| AppKit · desktop-level NSWindow
 Рендеринг ||| Rendering
